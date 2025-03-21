@@ -1,2 +1,16 @@
 # Ignorer dataset
 data/tweets.csv
+
+# Ignorer checkpoints Jupyter
+**/.ipynb_checkpoints/
+
+# Fichiers modèles ou lourds
+models/
+mlruns/
+*.pkl
+*.joblib
+*.h5
+
+# Fichiers temporaires
+*.log
+*.tmp
