@@ -91,6 +91,12 @@ from nltk.stem import WordNetLemmatizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import spacy
+try:
+    spacy.load("en_core_web_sm")
+except OSError:
+    print("🔄 Téléchargement du modèle spaCy en_core_web_sm...")
+    import subprocess
+    subprocess.check_call(["python", "-m", "spacy", "download", "en_core_web_sm"])
 import emoji
 import sentencepiece
 

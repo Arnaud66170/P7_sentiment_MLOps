@@ -1,15 +1,30 @@
 # Ignorer dataset
 data/tweets.csv
 
+# Sauvegardes des modèles
+models_saved/
+distilbert_output/
+distilbert_results/
+distilbert_model/
+tokenized_distilbert_dataset/
+tmp_trainer/
+mlruns/
+logs/
+env_p7_MLOps/
+
+__pycache__/
 # Ignorer checkpoints Jupyter
 **/.ipynb_checkpoints/
 
 # Fichiers modèles ou lourds
 models/
 mlruns/
+*.txt
 *.pkl
 *.joblib
 *.h5
+logs/
+distilbert_output/
 
 # Fichiers temporaires
 *.log

@@ -1,0 +1,119 @@
+from requirements import *
+
+nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
+nltk.download('stopwords')
+nltk.download('wordnet')
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+analyzer = SentimentIntensityAnalyzer()
+
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'http\S+|www\S+', '', text)
+    text = re.sub(r'@[A-Za-z0-9_]+', '', text)
+    text = emoji.replace_emoji(text, replace='')
+    text = re.sub(r'[^a-zA-Z ]', '', text)
+    text = ' '.join([word for word in text.split() if len(word) > 1])
+    return text
+
+def lemmatize_text(text):
+    doc = nlp(text)
+    return ' '.join([token.lemma_ for token in doc if not token.is_stop])
+
+def preprocess_batch(batch_df):
+    batch_df['text'] = batch_df['text'].astype(str).apply(clean_text)
+    batch_df['text'] = batch_df['text'].apply(lemmatize_text)
+    return batch_df
+
+
+def preprocess_tweets_parallel(df, filename = "models_saved/cleaned_tweets.pkl", n_jobs = -1, batch_size = 50000):
+    if os.path.exists(filename):
+        print(f"✅ Chargement des tweets nettoyés depuis {filename}")
+        return pd.read_pickle(filename)
+    print("🚀 Nettoyage des tweets en cours...")
+    batches = [df.iloc[i:i + batch_size] for i in range(0, len(df), batch_size)]
+    cleaned_batches = Parallel(n_jobs=n_jobs)(delayed(preprocess_batch)(batch) for batch in batches)
+    df_cleaned = pd.concat(cleaned_batches, ignore_index=True)
+    df_cleaned.to_pickle(filename)
+    print(f"✅ Tweets nettoyés sauvegardés dans {filename}")
+    return df_cleaned
+
+
+def compute_vader_scores(df, text_column = "text", save_path = "models_saved/vader_scores.pkl"):
+    if os.path.exists(save_path):
+        print(f"✅ Scores VADER chargés depuis {save_path}...")
+        return joblib.load(save_path)
+    print("🔄 Calcul des scores VADER...")
+    scores = df[text_column].astype(str).apply(lambda x: analyzer.polarity_scores(x)["compound"])
+    joblib.dump(scores, save_path)
+    print(f"✅ Scores VADER sauvegardés dans {save_path}.")
+    return scores
+
+
+def save_tweets_for_fasttext(X_text_full, filename = "models_saved/tweets_fasttext.txt"):
+    with open(filename, 'w', encoding = 'utf-8') as f:
+        for tweet in X_text_full:
+            f.write(tweet + '\n')
+    print(f"✅ Fichier {filename} créé avec succès.")
+
+
+# Vectorisation des tweets
+def vectorize_tweets(X_text_full, X_text_reduced):
+    count_vectorizer = CountVectorizer()
+    X_bow = count_vectorizer.fit_transform(X_text_full)
+    tfidf_vectorizer = TfidfVectorizer(max_features = 2000)
+    X_tfidf = tfidf_vectorizer.fit_transform(X_text_full)
+
+    fasttext_file = "models_saved/tweets_fasttext.txt"
+    if not os.path.exists(fasttext_file):
+        save_tweets_for_fasttext(X_text_full)
+    fasttext_model = fasttext.train_unsupervised(fasttext_file, model  ='skipgram', dim = 300)
+    X_fasttext = np.array([fasttext_model.get_sentence_vector(text) for text in X_text_full])
+
+    use_model = hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
+    X_use = np.array([use_model([text]).numpy().flatten() for text in X_text_reduced])
+
+    return X_bow, X_tfidf, X_fasttext, X_use
+
+
+
+def balance_dataset(df):
+    negatives = df[df['label'] == 0]
+    positives = df[df['label'] == 1]
+    positives_resampled = resample(positives, replace = True, n_samples = len(negatives), random_state = 70)
+    balanced_df = pd.concat([negatives, positives_resampled]).sample(frac = 1, random_state = 70).reset_index(drop = True)
+    return balanced_df
+
+
+# Tokenization DistilBERT
+def tokenize_distilbert_dataset(df, tokenizer_path = 'distilbert-base-uncased', save_path = "models_saved/tokenized_distilbert_dataset"):
+    tokenizer = DistilBertTokenizerFast.from_pretrained(tokenizer_path)
+    hf_dataset = Dataset.from_pandas(df[['text', 'label']])
+
+    def tokenize_function(examples):
+        return tokenizer(examples['text'], truncation = True, padding = 'max_length', max_length = 128)
+
+    if os.path.exists(save_path):
+        print(f"✅ Tokenized dataset déjà existant. Chargement depuis {save_path}...")
+        tokenized_dataset = load_from_disk(save_path)
+    else:
+        print("🔄 Tokenisation des tweets...")
+        tokenized_dataset = hf_dataset.map(tokenize_function, batched=True)
+        tokenized_dataset.save_to_disk(save_path)
+        print(f"✅ Dataset tokenizé sauvegardé dans {save_path}")
+
+    return tokenized_dataset
+
+
+# Préparation du dataset DistilBERT (échantillon)
+
+def prepare_distilbert_dataset(df, sample_size = 100000, dataset_path="models_saved/distilbert_dataset.pkl"):
+    if os.path.exists(dataset_path):
+        print("✅ Dataset DistilBERT existant. Chargement...")
+        dataset = pd.read_pickle(dataset_path)
+    else:
+        print("🔄 Préparation du dataset DistilBERT...")
+        dataset = df.sample(n = sample_size, random_state = 70).reset_index(drop = True)
+        pd.to_pickle(dataset, dataset_path)
+        print(f"✅ Dataset sauvegardé sous {dataset_path}")
+    return dataset
