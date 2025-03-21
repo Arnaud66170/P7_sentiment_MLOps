@@ -98,7 +98,11 @@ def get_all_model_scores(models_dict, datasets_dict):
             y_pred = (model_obj.predict(X_test) > 0.5).astype(int)
         else:
             continue
-
+        
+        # Sécuriser les types (cas FastText ou autres : string → int)
+        if isinstance(y_pred[0], str):
+            y_pred = np.array([int(p) for p in y_pred])
+        
         acc = round(accuracy_score(y_test, y_pred), 4)
         f1 = round(f1_score(y_test, y_pred), 4)
 

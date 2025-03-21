@@ -33,7 +33,7 @@ def preprocess_tweets_parallel(df, filename = "../models_saved/cleaned_tweets.pk
     print("🚀 Nettoyage des tweets en cours...")
     batches = [df.iloc[i:i + batch_size] for i in range(0, len(df), batch_size)]
     cleaned_batches = Parallel(n_jobs=n_jobs)(delayed(preprocess_batch)(batch) for batch in batches)
-    df_cleaned = pd.concat(cleaned_batches, ignore_index=True)
+    df_cleaned = pd.concat(cleaned_batches, ignore_index = True)
     df_cleaned.to_pickle(filename)
     print(f"✅ Tweets nettoyés sauvegardés dans {filename}")
     return df_cleaned
@@ -58,22 +58,62 @@ def save_tweets_for_fasttext(X_text_full, filename = "../models_saved/tweets_fas
 
 
 # Vectorisation des tweets
-def vectorize_tweets(X_text_full, X_text_reduced):
+def vectorize_tweets(X_text_full, X_text_reduced, y_full, y_reduced):
+    print("🚀 Vectorisation BoW et TF-IDF en cours...")
     count_vectorizer = CountVectorizer()
     X_bow = count_vectorizer.fit_transform(X_text_full)
-    tfidf_vectorizer = TfidfVectorizer(max_features = 2000)
+
+    tfidf_vectorizer = TfidfVectorizer(max_features=2000)
     X_tfidf = tfidf_vectorizer.fit_transform(X_text_full)
 
-    fasttext_file = "models_saved/tweets_fasttext.txt"
+    # === FASTTEXT ===
+    fasttext_file = "../models_saved/tweets_fasttext.txt"
     if not os.path.exists(fasttext_file):
         save_tweets_for_fasttext(X_text_full)
-    fasttext_model = fasttext.train_unsupervised(fasttext_file, model  ='skipgram', dim = 300)
+
+    print("🚀 Entraînement du modèle FastText...")
+    fasttext_model = fasttext.train_unsupervised(fasttext_file, model='skipgram', dim=300)
     X_fasttext = np.array([fasttext_model.get_sentence_vector(text) for text in X_text_full])
 
+    # === USE ===
+    print("🚀 Chargement Universal Sentence Encoder...")
     use_model = hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
     X_use = np.array([use_model([text]).numpy().flatten() for text in X_text_reduced])
 
-    return X_bow, X_tfidf, X_fasttext, X_use
+    print("✅ Vectorisation terminée.")
+    return X_bow, X_tfidf, X_fasttext, X_use, y_reduced
+
+
+# Fonction de vectorisation des tweets (BoW, TF-IDF, FastText, USE) + sauvegarde des labels USE
+def vectorize_and_save(X_text_full, X_text_reduced, y_full, y_reduced,
+                       bow_file="../models_saved/X_bow.pkl", 
+                       tfidf_file="../models_saved/X_tfidf.pkl", 
+                       fasttext_file="../models_saved/X_fasttext.pkl", 
+                       use_file="../models_saved/X_use.pkl", 
+                       labels_file="../models_saved/y_use.pkl"):
+    """
+    Fonction pour vectoriser les tweets (BoW, TF-IDF, FastText, USE) + sauvegarder les labels USE
+    """
+    if all(os.path.exists(f) for f in [bow_file, tfidf_file, fasttext_file, use_file, labels_file]):
+        print("📂 Chargement des matrices vectorisées existantes...")
+        X_bow = joblib.load(bow_file)
+        X_tfidf = joblib.load(tfidf_file)
+        X_fasttext = joblib.load(fasttext_file)
+        X_use = joblib.load(use_file)
+        y_use = joblib.load(labels_file)
+    else:
+        print("🚀 Vectorisation en cours...")
+        X_bow, X_tfidf, X_fasttext, X_use, y_use = vectorize_tweets(X_text_full, X_text_reduced, y_full, y_reduced)
+
+        joblib.dump(X_bow, bow_file)
+        joblib.dump(X_tfidf, tfidf_file)
+        joblib.dump(X_fasttext, fasttext_file)
+        joblib.dump(X_use, use_file)
+        joblib.dump(y_use, labels_file)
+
+    return X_bow, X_tfidf, X_fasttext, X_use, y_use
+
+
 
 
 

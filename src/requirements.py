@@ -67,6 +67,7 @@ import glob
 import pickle
 import multiprocessing
 from collections import Counter
+import accelerate
 
 # Data Manipulation
 import pandas as pd
