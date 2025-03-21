@@ -15,7 +15,7 @@ def save_model_if_not_exists(model, filename):
     print(f"✅ Modèle sauvegardé sous {filename}")
     return model
 
-def afficher_structure_dossier(chemin_base, niveau=0, max_niveaux=3):
+def afficher_structure_dossier(chemin_base, niveau = 0, max_niveaux = 3):
     if niveau > max_niveaux:
         return
     indent = "│   " * (niveau - 1) + ("├── " if niveau > 0 else "")

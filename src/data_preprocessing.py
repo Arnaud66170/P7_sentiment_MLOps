@@ -26,7 +26,7 @@ def preprocess_batch(batch_df):
     return batch_df
 
 
-def preprocess_tweets_parallel(df, filename = "models_saved/cleaned_tweets.pkl", n_jobs = -1, batch_size = 50000):
+def preprocess_tweets_parallel(df, filename = "../models_saved/cleaned_tweets.pkl", n_jobs = -1, batch_size = 50000):
     if os.path.exists(filename):
         print(f"✅ Chargement des tweets nettoyés depuis {filename}")
         return pd.read_pickle(filename)
@@ -39,7 +39,7 @@ def preprocess_tweets_parallel(df, filename = "models_saved/cleaned_tweets.pkl",
     return df_cleaned
 
 
-def compute_vader_scores(df, text_column = "text", save_path = "models_saved/vader_scores.pkl"):
+def compute_vader_scores(df, text_column = "text", save_path = "../models_saved/vader_scores.pkl"):
     if os.path.exists(save_path):
         print(f"✅ Scores VADER chargés depuis {save_path}...")
         return joblib.load(save_path)
@@ -50,7 +50,7 @@ def compute_vader_scores(df, text_column = "text", save_path = "models_saved/vad
     return scores
 
 
-def save_tweets_for_fasttext(X_text_full, filename = "models_saved/tweets_fasttext.txt"):
+def save_tweets_for_fasttext(X_text_full, filename = "../models_saved/tweets_fasttext.txt"):
     with open(filename, 'w', encoding = 'utf-8') as f:
         for tweet in X_text_full:
             f.write(tweet + '\n')
@@ -86,7 +86,7 @@ def balance_dataset(df):
 
 
 # Tokenization DistilBERT
-def tokenize_distilbert_dataset(df, tokenizer_path = 'distilbert-base-uncased', save_path = "models_saved/tokenized_distilbert_dataset"):
+def tokenize_distilbert_dataset(df, tokenizer_path = 'distilbert-base-uncased', save_path = "../models_saved/tokenized_distilbert_dataset"):
     tokenizer = DistilBertTokenizerFast.from_pretrained(tokenizer_path)
     hf_dataset = Dataset.from_pandas(df[['text', 'label']])
 
@@ -107,7 +107,7 @@ def tokenize_distilbert_dataset(df, tokenizer_path = 'distilbert-base-uncased', 
 
 # Préparation du dataset DistilBERT (échantillon)
 
-def prepare_distilbert_dataset(df, sample_size = 100000, dataset_path="models_saved/distilbert_dataset.pkl"):
+def prepare_distilbert_dataset(df, sample_size = 100000, dataset_path="../models_saved/distilbert_dataset.pkl"):
     if os.path.exists(dataset_path):
         print("✅ Dataset DistilBERT existant. Chargement...")
         dataset = pd.read_pickle(dataset_path)

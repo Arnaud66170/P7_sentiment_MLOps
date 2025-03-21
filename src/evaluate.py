@@ -27,7 +27,7 @@ def classification_report_metrics(y_true, y_pred):
 
 # Évaluation spécifique DistilBERT
 
-def evaluate_distilbert_model(model, tokenized_dataset, results_path = "models_saved/distilbert_eval_results.pkl"):
+def evaluate_distilbert_model(model, tokenized_dataset, results_path = "../models_saved/distilbert_eval_results.pkl"):
     if os.path.exists(results_path):
         print(f"✅ Résultats d'évaluation déjà disponibles. Chargement...")
         eval_results = joblib.load(results_path)
@@ -110,7 +110,7 @@ def get_all_model_scores(models_dict, datasets_dict):
         # Visualisation matrice + rapport
         print(f"Résultats pour : {model_name}")
         print(classification_report(y_test, y_pred))
-        plt.figure(figsize=(6,6))
+        plt.figure(figsize = (6,6))
         sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt="d", cmap="Blues")
         plt.title(f"Matrice de confusion - {model_name}")
         plt.xlabel("Prédictions")

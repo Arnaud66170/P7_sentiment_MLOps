@@ -3,7 +3,7 @@ from src.utils import suivi_temps_ressources
 
 # Logistic Regression
 
-def train_logistic_regression_with_cv(X, y, model_path="models_saved/log_reg_model.pkl"):
+def train_logistic_regression_with_cv(X, y, model_path="../models_saved/log_reg_model.pkl"):
     if os.path.exists(model_path):
         print("✅ Modèle Régression Logistique déjà existant. Chargement...")
         return joblib.load(model_path)
@@ -25,7 +25,7 @@ def train_logistic_regression_with_cv(X, y, model_path="models_saved/log_reg_mod
 
 
 # Random Forest
-def train_random_forest(X_train, y_train, model_path = "models_saved/rf_model.pkl"):
+def train_random_forest(X_train, y_train, model_path = "../models_saved/rf_model.pkl"):
     if os.path.exists(model_path):
         print("✅ Modèle RandomForest déjà existant. Chargement...")
         return joblib.load(model_path)
@@ -39,7 +39,7 @@ def train_random_forest(X_train, y_train, model_path = "models_saved/rf_model.pk
 
 
 # LightGBM
-def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "models_saved/lgbm_model.txt"):
+def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "../models_saved/lgbm_model.txt"):
     if os.path.exists(model_path):
         print("✅ Modèle LightGBM existant. Chargement...")
         return lgb.Booster(model_file = model_path)
@@ -67,7 +67,7 @@ def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "models_saved/lg
 
 
 # FastText Supervised Training
-def train_fasttext_supervised(file_path = "models_saved/tweets_fasttext.txt", model_path = "models_saved/fasttext_model.ftz"):
+def train_fasttext_supervised(file_path = "../models_saved/tweets_fasttext.txt", model_path = "../models_saved/fasttext_model.ftz"):
     if os.path.exists(model_path):
         print("✅ Modèle FastText supervisé existant. Chargement...")
         return fasttext.load_model(model_path)
@@ -80,7 +80,7 @@ def train_fasttext_supervised(file_path = "models_saved/tweets_fasttext.txt", mo
 
 
 # LSTM Training sur FastText
-def train_lstm_model(X_embeddings, y_labels, model_path = "models_saved/lstm_model.h5"):
+def train_lstm_model(X_embeddings, y_labels, model_path = "../models_saved/lstm_model.h5"):
     X = np.array(X_embeddings)
     y = np.array(y_labels).astype(int)
 
@@ -116,7 +116,7 @@ def train_lstm_model(X_embeddings, y_labels, model_path = "models_saved/lstm_mod
 
 
 # DistilBERT Fine-tuning
-def train_distilbert_model(tokenized_dataset, model_save_path = "models_saved/distilbert_model"):
+def train_distilbert_model(tokenized_dataset, model_save_path = "../models_saved/distilbert_model"):
     from datasets import ClassLabel
 
     if os.path.exists(model_save_path):
@@ -136,7 +136,7 @@ def train_distilbert_model(tokenized_dataset, model_save_path = "models_saved/di
     test_dataset = dataset_split['test']
 
     training_args = TrainingArguments(
-        output_dir="models_saved/distilbert_output",
+        output_dir = "../models_saved/distilbert_output",
         evaluation_strategy = "epoch",
         save_strategy = "epoch",
         learning_rate = 2e-5,
@@ -147,7 +147,7 @@ def train_distilbert_model(tokenized_dataset, model_save_path = "models_saved/di
         save_total_limit = 1,
         load_best_model_at_end = True,
         metric_for_best_model = "accuracy",
-        logging_dir = "models_saved/logs",
+        logging_dir = "../models_saved/logs",
         logging_steps = 50
     )
 
