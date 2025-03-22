@@ -85,7 +85,7 @@ def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "../models_saved
 
 
 # FastText Supervised Training
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def train_fasttext_supervised(file_path = "../models_saved/tweets_fasttext.txt", model_path = "../models_saved/fasttext_model.ftz"):
     if os.path.exists(model_path):
         print("✅ Modèle FastText supervisé existant. Chargement...")
