@@ -167,7 +167,7 @@ from fastapi import FastAPI
 import uvicorn
 import streamlit as st
 from functools import wraps
-
+import subprocess
 
 # Testing & Requests
 import pytest

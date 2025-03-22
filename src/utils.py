@@ -4,6 +4,7 @@ import pickle
 import joblib
 import psutil
 import mlflow
+import subprocess
 from functools import wraps
 
 
@@ -21,6 +22,7 @@ def mlflow_run_safety(experiment_name="P7_sentiment_analysis"):
             return result
         return wrapped_function
     return decorator
+
 
 
 @mlflow_run_safety(experiment_name="P7_sentiment_analysis")
@@ -72,4 +74,11 @@ def load_matrix(filename):
         print(f"✅ Chargement de {filename}...")
         return pickle.load(f)
 
+
+def launch_mlflow_ui(port = 5000):
+    try:
+        subprocess.Popen(["mlflow", "ui", "--port", str(port)], stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
+        print(f"🚀 MLFlow UI lancé sur http://127.0.0.1:{port}")
+    except Exception as e:
+        print(f"❌ Impossible de démarrer MLFlow UI : {e}")
 
