@@ -1,8 +1,24 @@
-from requirements import *
-from src.utils import suivi_temps_ressources
+import os
+import time
+import joblib
+import numpy as np
+import fasttext
+import lightgbm as lgb
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.metrics import accuracy_score, f1_score
+from lightgbm import early_stopping, log_evaluation
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional
+from tensorflow.keras.callbacks import EarlyStopping
+import tensorflow as tf
+from transformers import DistilBertForSequenceClassification, Trainer, TrainingArguments
+from utils import mlflow_run_safety, suivi_temps_ressources
+
 
 # Logistic Regression
-
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def train_logistic_regression_with_cv(X, y, model_path="../models_saved/log_reg_model.pkl"):
     if os.path.exists(model_path):
         print("✅ Modèle Régression Logistique déjà existant. Chargement...")
@@ -25,6 +41,7 @@ def train_logistic_regression_with_cv(X, y, model_path="../models_saved/log_reg_
 
 
 # Random Forest
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def train_random_forest(X_train, y_train, model_path = "../models_saved/rf_model.pkl"):
     if os.path.exists(model_path):
         print("✅ Modèle RandomForest déjà existant. Chargement...")
@@ -39,6 +56,7 @@ def train_random_forest(X_train, y_train, model_path = "../models_saved/rf_model
 
 
 # LightGBM
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "../models_saved/lgbm_model.txt"):
     if os.path.exists(model_path):
         print("✅ Modèle LightGBM existant. Chargement...")
@@ -67,6 +85,7 @@ def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "../models_saved
 
 
 # FastText Supervised Training
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def train_fasttext_supervised(file_path = "../models_saved/tweets_fasttext.txt", model_path = "../models_saved/fasttext_model.ftz"):
     if os.path.exists(model_path):
         print("✅ Modèle FastText supervisé existant. Chargement...")
@@ -80,6 +99,7 @@ def train_fasttext_supervised(file_path = "../models_saved/tweets_fasttext.txt",
 
 
 # LSTM Training sur FastText
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def train_lstm_model(X_embeddings, y_labels, model_path = "../models_saved/lstm_model.h5"):
     X = np.array(X_embeddings)
     y = np.array(y_labels).astype(int)
@@ -116,14 +136,13 @@ def train_lstm_model(X_embeddings, y_labels, model_path = "../models_saved/lstm_
 
 
 # DistilBERT Fine-tuning
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def train_distilbert_model(tokenized_dataset, model_save_path = "../models_saved/distilbert_model"):
     from datasets import ClassLabel
-
     if os.path.exists(model_save_path):
         print(f"✅ Modèle DistilBERT déjà fine-tuné. Chargement depuis {model_save_path}...")
         model = DistilBertForSequenceClassification.from_pretrained(model_save_path)
         return model, None, None
-
     print("🚀 Fine-tuning DistilBERT...")
     model = DistilBertForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels = 2)
 

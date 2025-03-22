@@ -1,7 +1,17 @@
-from requirements import *
+import os
+import joblib
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix
+from transformers import Trainer
+from datasets import ClassLabel
+from utils import mlflow_run_safety
+
 
 # Évaluation classification
-
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def plot_confusion_matrix(y_true, y_pred, model_name):
     plt.figure(figsize = (6,6))
     sns.heatmap(confusion_matrix(y_true, y_pred), annot = True, fmt = "d", cmap = "Blues")
@@ -11,6 +21,7 @@ def plot_confusion_matrix(y_true, y_pred, model_name):
     plt.show()
 
 
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def display_misclassified_tweets(X_test_text, y_true, y_pred, model_name, max_display = 10):
     misclassified_idx = np.where(y_pred != y_true)[0]
     print(f"\n🔍 Tweets mal classifiés par {model_name} :")
@@ -20,13 +31,14 @@ def display_misclassified_tweets(X_test_text, y_true, y_pred, model_name, max_di
         print("✅ Aucune erreur détectée !")
 
 
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def classification_report_metrics(y_true, y_pred):
     print("\n📊 Rapport de classification :")
     print(classification_report(y_true, y_pred))
 
 
 # Évaluation spécifique DistilBERT
-
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def evaluate_distilbert_model(model, tokenized_dataset, results_path = "../models_saved/distilbert_eval_results.pkl"):
     if os.path.exists(results_path):
         print(f"✅ Résultats d'évaluation déjà disponibles. Chargement...")
@@ -62,7 +74,9 @@ def evaluate_distilbert_model(model, tokenized_dataset, results_path = "../model
     print("✅ Résultats sauvegardés")
     return acc, f1
 
+
 # Comparaison finale des modèles
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def get_all_model_scores(models_dict, datasets_dict):
     from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix
 

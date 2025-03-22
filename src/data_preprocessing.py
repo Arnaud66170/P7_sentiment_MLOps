@@ -1,4 +1,24 @@
-from requirements import *
+import os
+import re
+import pickle
+import emoji
+import joblib
+import numpy as np
+import pandas as pd
+import spacy
+import nltk
+nltk.download('vader_lexicon')
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from sklearn.utils import resample
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from joblib import Parallel, delayed
+import fasttext
+import tensorflow_hub as hub
+from transformers import DistilBertTokenizerFast
+from datasets import Dataset, load_from_disk
+from utils import mlflow_run_safety
 
 nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 nltk.download('stopwords')
@@ -7,6 +27,8 @@ stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
 analyzer = SentimentIntensityAnalyzer()
 
+
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def clean_text(text):
     text = text.lower()
     text = re.sub(r'http\S+|www\S+', '', text)
@@ -16,16 +38,21 @@ def clean_text(text):
     text = ' '.join([word for word in text.split() if len(word) > 1])
     return text
 
+
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def lemmatize_text(text):
     doc = nlp(text)
     return ' '.join([token.lemma_ for token in doc if not token.is_stop])
 
+
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def preprocess_batch(batch_df):
     batch_df['text'] = batch_df['text'].astype(str).apply(clean_text)
     batch_df['text'] = batch_df['text'].apply(lemmatize_text)
     return batch_df
 
 
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def preprocess_tweets_parallel(df, filename = "../models_saved/cleaned_tweets.pkl", n_jobs = -1, batch_size = 50000):
     if os.path.exists(filename):
         print(f"✅ Chargement des tweets nettoyés depuis {filename}")
@@ -39,6 +66,7 @@ def preprocess_tweets_parallel(df, filename = "../models_saved/cleaned_tweets.pk
     return df_cleaned
 
 
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def compute_vader_scores(df, text_column = "text", save_path = "../models_saved/vader_scores.pkl"):
     if os.path.exists(save_path):
         print(f"✅ Scores VADER chargés depuis {save_path}...")
@@ -50,6 +78,7 @@ def compute_vader_scores(df, text_column = "text", save_path = "../models_saved/
     return scores
 
 
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def save_tweets_for_fasttext(X_text_full, filename = "../models_saved/tweets_fasttext.txt"):
     with open(filename, 'w', encoding = 'utf-8') as f:
         for tweet in X_text_full:
@@ -57,7 +86,9 @@ def save_tweets_for_fasttext(X_text_full, filename = "../models_saved/tweets_fas
     print(f"✅ Fichier {filename} créé avec succès.")
 
 
+
 # Vectorisation des tweets
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def vectorize_tweets(X_text_full, X_text_reduced, y_full, y_reduced):
     print("🚀 Vectorisation BoW et TF-IDF en cours...")
     count_vectorizer = CountVectorizer()
@@ -85,6 +116,7 @@ def vectorize_tweets(X_text_full, X_text_reduced, y_full, y_reduced):
 
 
 # Fonction de vectorisation des tweets (BoW, TF-IDF, FastText, USE) + sauvegarde des labels USE
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def vectorize_and_save(X_text_full, X_text_reduced, y_full, y_reduced,
                        bow_file="../models_saved/X_bow.pkl", 
                        tfidf_file="../models_saved/X_tfidf.pkl", 
@@ -114,9 +146,7 @@ def vectorize_and_save(X_text_full, X_text_reduced, y_full, y_reduced,
     return X_bow, X_tfidf, X_fasttext, X_use, y_use
 
 
-
-
-
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def balance_dataset(df):
     negatives = df[df['label'] == 0]
     positives = df[df['label'] == 1]
@@ -126,6 +156,7 @@ def balance_dataset(df):
 
 
 # Tokenization DistilBERT
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def tokenize_distilbert_dataset(df, tokenizer_path = 'distilbert-base-uncased', save_path = "../models_saved/tokenized_distilbert_dataset"):
     tokenizer = DistilBertTokenizerFast.from_pretrained(tokenizer_path)
     hf_dataset = Dataset.from_pandas(df[['text', 'label']])
@@ -146,7 +177,7 @@ def tokenize_distilbert_dataset(df, tokenizer_path = 'distilbert-base-uncased', 
 
 
 # Préparation du dataset DistilBERT (échantillon)
-
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def prepare_distilbert_dataset(df, sample_size = 100000, dataset_path="../models_saved/distilbert_dataset.pkl"):
     if os.path.exists(dataset_path):
         print("✅ Dataset DistilBERT existant. Chargement...")

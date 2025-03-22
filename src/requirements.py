@@ -86,6 +86,8 @@ from tqdm import tqdm
 
 # Text Processing & NLP
 import nltk
+nltk.download('vader_lexicon')
+
 from nltk import pos_tag
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
@@ -164,6 +166,8 @@ from flask import Flask, request, jsonify
 from fastapi import FastAPI
 import uvicorn
 import streamlit as st
+from functools import wraps
+
 
 # Testing & Requests
 import pytest

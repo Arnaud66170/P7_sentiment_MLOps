@@ -44,3 +44,23 @@ pip install -r requirements.txt
 
 ## Lancement API (local)
 uvicorn src.api.main:app --reload
+
+#  Suivi des Expérimentations avec MLflow
+
+##  Lancement du serveur MLflow local :
+- Placez-vous à la racine du projet dans votre terminal :
+mlflow ui --backend-store-uri ./mlruns
+
+- Ouvrez votre navigateur et accédez à :
+http://127.0.0.1:5000
+
+## Contenu visible dans MLflow :
+
+| Onglet          | Contenu                                                                                         |
+|----------------|--------------------------------------------------------------------------------------------------|
+| **Experiments** | Expérience nommée `Comparaison finale`                                                            |
+| **Runs**        | Chaque exécution du notebook génère un run distinct                                               |
+| **Metrics**     | Accuracy & F1-score de chaque modèle (par ex : `logreg_accuracy`, `distilbert_f1`, etc.)           |
+| **Artifacts**   | Tableau comparatif final sauvegardé : `models_saved/comparaison_resultats.csv`                    |
+
+Vous pourrez ainsi visualiser les performances des modèles, télécharger les résultats et assurer le suivi complet de vos entraînements.

@@ -1,5 +1,29 @@
-from requirements import *
+import os
+import time
+import pickle
+import joblib
+import psutil
+import mlflow
+from functools import wraps
 
+
+# Décorateur de sécurisation des runs MLflow
+def mlflow_run_safety(experiment_name="P7_sentiment_analysis"):
+    def decorator(f):
+        def wrapped_function(*args, **kwargs):
+            mlflow.set_experiment(experiment_name)
+            if mlflow.active_run() is not None:
+                mlflow.end_run()
+            with mlflow.start_run():
+                print(f"🚀 Nouveau run démarré : {mlflow.active_run().info.run_id}")
+                result = f(*args, **kwargs)
+            print(f"✅ Run terminé.")  # ✅ Simplifié ici !
+            return result
+        return wrapped_function
+    return decorator
+
+
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def suivi_temps_ressources(start_time, model_name, phase="Fin"):
     end_time = time.time()
     elapsed = end_time - start_time
@@ -7,6 +31,8 @@ def suivi_temps_ressources(start_time, model_name, phase="Fin"):
     ram_usage = psutil.virtual_memory().percent
     print(f"\n⏱️ [{model_name}] - {phase} : {elapsed:.2f} sec | CPU: {cpu_usage}% | RAM: {ram_usage}%")
 
+
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def save_model_if_not_exists(model, filename):
     if os.path.exists(filename):
         print(f"✅ Modèle déjà sauvegardé : {filename}. Chargement...")
@@ -14,6 +40,7 @@ def save_model_if_not_exists(model, filename):
     joblib.dump(model, filename)
     print(f"✅ Modèle sauvegardé sous {filename}")
     return model
+
 
 def afficher_structure_dossier(chemin_base, niveau = 0, max_niveaux = 3):
     if niveau > max_niveaux:
@@ -32,12 +59,17 @@ def afficher_structure_dossier(chemin_base, niveau = 0, max_niveaux = 3):
         if os.path.isdir(chemin_complet):
             afficher_structure_dossier(chemin_complet, niveau + 1, max_niveaux)
 
+
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def save_matrix(matrix, filename):
     with open(filename, 'wb') as f:
         pickle.dump(matrix, f)
     print(f"✅ {filename} sauvegardé avec succès.")
 
+@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def load_matrix(filename):
     with open(filename, 'rb') as f:
         print(f"✅ Chargement de {filename}...")
         return pickle.load(f)
+
+
