@@ -18,9 +18,9 @@ from utils import mlflow_run_safety, suivi_temps_ressources
 
 
 # Logistic Regression
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
-def train_logistic_regression_with_cv(X, y, model_path="../models_saved/log_reg_model.pkl"):
-    if os.path.exists(model_path):
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
+def train_logistic_regression_with_cv(X, y, model_path="../models_saved/log_reg_model.pkl", force_retrain = False):
+    if os.path.exists(model_path) and not force_retrain:
         print("✅ Modèle Régression Logistique déjà existant. Chargement...")
         return joblib.load(model_path)
     start = time.time()
@@ -41,9 +41,9 @@ def train_logistic_regression_with_cv(X, y, model_path="../models_saved/log_reg_
 
 
 # Random Forest
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
-def train_random_forest(X_train, y_train, model_path = "../models_saved/rf_model.pkl"):
-    if os.path.exists(model_path):
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
+def train_random_forest(X_train, y_train, model_path = "../models_saved/rf_model.pkl", force_retrain = False):
+    if os.path.exists(model_path) and not force_retrain:
         print("✅ Modèle RandomForest déjà existant. Chargement...")
         return joblib.load(model_path)
     start = time.time()
@@ -56,9 +56,9 @@ def train_random_forest(X_train, y_train, model_path = "../models_saved/rf_model
 
 
 # LightGBM
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
-def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "../models_saved/lgbm_model.txt"):
-    if os.path.exists(model_path):
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
+def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "../models_saved/lgbm_model.txt", force_retrain = False):
+    if os.path.exists(model_path) and not force_retrain:
         print("✅ Modèle LightGBM existant. Chargement...")
         return lgb.Booster(model_file = model_path)
     start = time.time()
@@ -86,8 +86,8 @@ def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "../models_saved
 
 # FastText Supervised Training
 @mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
-def train_fasttext_supervised(file_path = "../models_saved/tweets_fasttext.txt", model_path = "../models_saved/fasttext_model.ftz"):
-    if os.path.exists(model_path):
+def train_fasttext_supervised(file_path = "../models_saved/tweets_fasttext.txt", model_path = "../models_saved/fasttext_model.ftz", force_retrain = False):
+    if os.path.exists(model_path) and not force_retrain:
         print("✅ Modèle FastText supervisé existant. Chargement...")
         return fasttext.load_model(model_path)
 
@@ -100,7 +100,7 @@ def train_fasttext_supervised(file_path = "../models_saved/tweets_fasttext.txt",
 
 # LSTM Training sur FastText
 @mlflow_run_safety(experiment_name="P7_sentiment_analysis")
-def train_lstm_model(X_embeddings, y_labels, model_path = "../models_saved/lstm_model.h5"):
+def train_lstm_model(X_embeddings, y_labels, model_path = "../models_saved/lstm_model.h5", force_retrain = False):
     X = np.array(X_embeddings)
     y = np.array(y_labels).astype(int)
 
@@ -109,7 +109,7 @@ def train_lstm_model(X_embeddings, y_labels, model_path = "../models_saved/lstm_
     X_train_reshaped = X_train.reshape((X_train.shape[0], 1, X_train.shape[1]))
     X_test_reshaped = X_test.reshape((X_test.shape[0], 1, X_test.shape[1]))
 
-    if os.path.exists(model_path):
+    if os.path.exists(model_path) and not force_retrain:
         print(f"✅ Modèle LSTM déjà existant. Chargement...")
         model = tf.keras.models.load_model(model_path)
         return model, (X_test_reshaped, y_test), None
@@ -137,9 +137,9 @@ def train_lstm_model(X_embeddings, y_labels, model_path = "../models_saved/lstm_
 
 # DistilBERT Fine-tuning
 @mlflow_run_safety(experiment_name="P7_sentiment_analysis")
-def train_distilbert_model(tokenized_dataset, model_save_path = "../models_saved/distilbert_model"):
+def train_distilbert_model(tokenized_dataset, model_save_path = "../models_saved/distilbert_model", force_retrain = False):
     from datasets import ClassLabel
-    if os.path.exists(model_save_path):
+    if os.path.exists(model_save_path) and not force_retrain:
         print(f"✅ Modèle DistilBERT déjà fine-tuné. Chargement depuis {model_save_path}...")
         model = DistilBertForSequenceClassification.from_pretrained(model_save_path)
         return model, None, None
