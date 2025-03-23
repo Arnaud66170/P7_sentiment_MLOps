@@ -13,6 +13,7 @@ from nltk.stem import WordNetLemmatizer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from sklearn.utils import resample
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.metrics import classification_report, accuracy_score, f1_score
 from joblib import Parallel, delayed
 import fasttext
 import tensorflow_hub as hub
