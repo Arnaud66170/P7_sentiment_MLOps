@@ -52,33 +52,46 @@ def preprocess_batch(batch_df):
     return batch_df
 
 
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def preprocess_tweets_parallel(df, filename = "../models_saved/cleaned_tweets.pkl", n_jobs = -1, batch_size = 50000):
     if os.path.exists(filename):
         print(f"✅ Chargement des tweets nettoyés depuis {filename}")
         return pd.read_pickle(filename)
     print("🚀 Nettoyage des tweets en cours...")
     batches = [df.iloc[i:i + batch_size] for i in range(0, len(df), batch_size)]
-    cleaned_batches = Parallel(n_jobs=n_jobs)(delayed(preprocess_batch)(batch) for batch in batches)
+    cleaned_batches = Parallel(n_jobs = n_jobs)(delayed(preprocess_batch)(batch) for batch in batches)
     df_cleaned = pd.concat(cleaned_batches, ignore_index = True)
     df_cleaned.to_pickle(filename)
     print(f"✅ Tweets nettoyés sauvegardés dans {filename}")
     return df_cleaned
 
 
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def compute_vader_scores(df, text_column = "text", save_path = "../models_saved/vader_scores.pkl"):
     if os.path.exists(save_path):
         print(f"✅ Scores VADER chargés depuis {save_path}...")
-        return joblib.load(save_path)
-    print("🔄 Calcul des scores VADER...")
-    scores = df[text_column].astype(str).apply(lambda x: analyzer.polarity_scores(x)["compound"])
-    joblib.dump(scores, save_path)
-    print(f"✅ Scores VADER sauvegardés dans {save_path}.")
+        scores = joblib.load(save_path)
+    else:
+        print("🔄 Calcul des scores VADER...")
+        scores = df[text_column].astype(str).apply(lambda x: analyzer.polarity_scores(x)["compound"])
+        joblib.dump(scores, save_path)
+        print(f"✅ Scores VADER sauvegardés dans {save_path}.")
+
+    # 🟢 Evaluation ici directement
+    vader_pred = scores.apply(lambda x: 1 if x >= 0 else 0)
+    print("\n📊 Rapport de classification VADER :")
+    print(classification_report(df['label'], vader_pred))
+
+    # 📌 (Optionnel) Log des metrics dans MLflow
+    acc = accuracy_score(df['label'], vader_pred)
+    f1 = f1_score(df['label'], vader_pred)
+    mlflow.log_metric("vader_accuracy", acc)
+    mlflow.log_metric("vader_f1", f1)
+
     return scores
 
 
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def save_tweets_for_fasttext(X_text_full, filename = "../models_saved/tweets_fasttext.txt"):
     with open(filename, 'w', encoding = 'utf-8') as f:
         for tweet in X_text_full:
@@ -88,13 +101,13 @@ def save_tweets_for_fasttext(X_text_full, filename = "../models_saved/tweets_fas
 
 
 # Vectorisation des tweets
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def vectorize_tweets(X_text_full, X_text_reduced, y_full, y_reduced):
     print("🚀 Vectorisation BoW et TF-IDF en cours...")
     count_vectorizer = CountVectorizer()
     X_bow = count_vectorizer.fit_transform(X_text_full)
 
-    tfidf_vectorizer = TfidfVectorizer(max_features=2000)
+    tfidf_vectorizer = TfidfVectorizer(max_features = 2000)
     X_tfidf = tfidf_vectorizer.fit_transform(X_text_full)
 
     # === FASTTEXT ===
@@ -103,7 +116,7 @@ def vectorize_tweets(X_text_full, X_text_reduced, y_full, y_reduced):
         save_tweets_for_fasttext(X_text_full)
 
     print("🚀 Entraînement du modèle FastText...")
-    fasttext_model = fasttext.train_unsupervised(fasttext_file, model='skipgram', dim=300)
+    fasttext_model = fasttext.train_unsupervised(fasttext_file, model = 'skipgram', dim = 300)
     X_fasttext = np.array([fasttext_model.get_sentence_vector(text) for text in X_text_full])
 
     # === USE ===
@@ -116,13 +129,13 @@ def vectorize_tweets(X_text_full, X_text_reduced, y_full, y_reduced):
 
 
 # Fonction de vectorisation des tweets (BoW, TF-IDF, FastText, USE) + sauvegarde des labels USE
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def vectorize_and_save(X_text_full, X_text_reduced, y_full, y_reduced,
-                       bow_file="../models_saved/X_bow.pkl", 
-                       tfidf_file="../models_saved/X_tfidf.pkl", 
-                       fasttext_file="../models_saved/X_fasttext.pkl", 
-                       use_file="../models_saved/X_use.pkl", 
-                       labels_file="../models_saved/y_use.pkl"):
+                       bow_file = "../models_saved/X_bow.pkl", 
+                       tfidf_file = "../models_saved/X_tfidf.pkl", 
+                       fasttext_file = "../models_saved/X_fasttext.pkl", 
+                       use_file = "../models_saved/X_use.pkl", 
+                       labels_file = "../models_saved/y_use.pkl"):
     """
     Fonction pour vectoriser les tweets (BoW, TF-IDF, FastText, USE) + sauvegarder les labels USE
     """
@@ -156,7 +169,7 @@ def balance_dataset(df):
 
 
 # Tokenization DistilBERT
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def tokenize_distilbert_dataset(df, tokenizer_path = 'distilbert-base-uncased', save_path = "../models_saved/tokenized_distilbert_dataset"):
     tokenizer = DistilBertTokenizerFast.from_pretrained(tokenizer_path)
     hf_dataset = Dataset.from_pandas(df[['text', 'label']])
@@ -177,8 +190,8 @@ def tokenize_distilbert_dataset(df, tokenizer_path = 'distilbert-base-uncased', 
 
 
 # Préparation du dataset DistilBERT (échantillon)
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
-def prepare_distilbert_dataset(df, sample_size = 100000, dataset_path="../models_saved/distilbert_dataset.pkl"):
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
+def prepare_distilbert_dataset(df, sample_size = 100000, dataset_path = "../models_saved/distilbert_dataset.pkl"):
     if os.path.exists(dataset_path):
         print("✅ Dataset DistilBERT existant. Chargement...")
         dataset = pd.read_pickle(dataset_path)

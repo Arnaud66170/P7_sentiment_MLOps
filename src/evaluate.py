@@ -11,7 +11,7 @@ from utils import mlflow_run_safety
 
 
 # Évaluation classification
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def plot_confusion_matrix(y_true, y_pred, model_name):
     plt.figure(figsize = (6,6))
     sns.heatmap(confusion_matrix(y_true, y_pred), annot = True, fmt = "d", cmap = "Blues")
@@ -21,7 +21,7 @@ def plot_confusion_matrix(y_true, y_pred, model_name):
     plt.show()
 
 
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def display_misclassified_tweets(X_test_text, y_true, y_pred, model_name, max_display = 10):
     misclassified_idx = np.where(y_pred != y_true)[0]
     print(f"\n🔍 Tweets mal classifiés par {model_name} :")
@@ -31,14 +31,14 @@ def display_misclassified_tweets(X_test_text, y_true, y_pred, model_name, max_di
         print("✅ Aucune erreur détectée !")
 
 
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def classification_report_metrics(y_true, y_pred):
     print("\n📊 Rapport de classification :")
     print(classification_report(y_true, y_pred))
 
 
 # Évaluation spécifique DistilBERT
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def evaluate_distilbert_model(model, tokenized_dataset, results_path = "../models_saved/distilbert_eval_results.pkl"):
     if os.path.exists(results_path):
         print(f"✅ Résultats d'évaluation déjà disponibles. Chargement...")
@@ -76,7 +76,7 @@ def evaluate_distilbert_model(model, tokenized_dataset, results_path = "../model
 
 
 # Comparaison finale des modèles
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def get_all_model_scores(models_dict, datasets_dict):
     from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix
 
@@ -87,9 +87,16 @@ def get_all_model_scores(models_dict, datasets_dict):
     }
 
     for model_name, model_obj in models_dict.items():
+        # Cas particulier DistilBERT déjà évalué
         if model_name == 'distilbert_metrics':
-            # Cas particulier DistilBERT déjà évalué
             results['Modèle'].append('DistilBERT fine-tuné')
+            results['Accuracy'].append(round(model_obj['accuracy'], 4))
+            results['F1-score'].append(round(model_obj['f1'], 4))
+            continue
+
+        # Cas particulier VADER baseline
+        if model_name == 'vader_metrics':
+            results['Modèle'].append('VADER baseline')
             results['Accuracy'].append(round(model_obj['accuracy'], 4))
             results['F1-score'].append(round(model_obj['f1'], 4))
             continue
@@ -112,11 +119,11 @@ def get_all_model_scores(models_dict, datasets_dict):
             y_pred = (model_obj.predict(X_test) > 0.5).astype(int)
         else:
             continue
-        
-        # Sécuriser les types (cas FastText ou autres : string → int)
+
+        # Sécuriser les types
         if isinstance(y_pred[0], str):
             y_pred = np.array([int(p) for p in y_pred])
-        
+
         acc = round(accuracy_score(y_test, y_pred), 4)
         f1 = round(f1_score(y_test, y_pred), 4)
 
@@ -126,16 +133,22 @@ def get_all_model_scores(models_dict, datasets_dict):
         results['F1-score'].append(f1)
 
         # Visualisation matrice + rapport
-        print(f"Résultats pour : {model_name}")
+        print(f"\n📊 Résultats pour : {model_name}")
         print(classification_report(y_test, y_pred))
         plt.figure(figsize = (6,6))
-        sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt="d", cmap="Blues")
+        sns.heatmap(confusion_matrix(y_test, y_pred), annot = True, fmt = "d", cmap = "Blues")
         plt.title(f"Matrice de confusion - {model_name}")
         plt.xlabel("Prédictions")
         plt.ylabel("Réel")
         plt.show()
 
+    # Résultats finaux
     df_results = pd.DataFrame(results)
-    print("Comparaison finale des modèles :")
+    print("\n📊 Comparaison finale des modèles :")
     display(df_results)
+
+    # Log complet tableau dans MLflow
+    df_results.to_csv("../models_saved/comparaison_resultats.csv", index = False)
+    mlflow.log_artifact("../models_saved/comparaison_resultats.csv")
+
     return df_results
