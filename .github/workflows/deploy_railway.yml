@@ -1,0 +1,22 @@
+name: Deploy API to Railway   # Nom du workflow visible sur GitHub Actions UI
+
+# 1 - Quand le pipeline doit se lancer ?
+on:
+  push:               # Déclencheur : à chaque "push"
+    branches:
+      - main          # Seulement quand tu pushes sur la branche "main"
+
+# 2 - Le job qu’on exécute
+jobs:
+  deploy:
+    runs-on: ubuntu-latest                              # Machine virtuelle Ubuntu (gratuite, fournie par GitHub)
+
+    steps:
+      - uses: actions/checkout@v3                       # 1ère étape : récupérer ton code depuis le repo GitHub
+
+      - name: Railway Up                                # 2ème étape : appel de Railway
+        uses: railwayapp/cli-action@v1                  # Action officielle Railway CLI
+        with:
+          command: up                                   # Commande = Railway "up" (build + déploiement)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}   # 🔐 Token d'authentification sécurisé

@@ -4,6 +4,7 @@ import joblib
 import numpy as np
 import fasttext
 import lightgbm as lgb
+import mlflow
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -22,12 +23,10 @@ from mlflow.keras import MLflowCallback
 # Logistic Regression
 @mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def train_logistic_regression_with_cv(X, y, model_path="../models_saved/log_reg_model.pkl", force_retrain = False):
-    import mlflow
-
     if os.path.exists(model_path) and not force_retrain:
         print("✅ Modèle Régression Logistique déjà existant. Chargement...")
         return joblib.load(model_path)
-    
+
     start = time.time()
     param_grid = {
         "C": [0.01, 0.1, 1, 10, 100],
@@ -36,67 +35,76 @@ def train_logistic_regression_with_cv(X, y, model_path="../models_saved/log_reg_
     }
     log_reg = LogisticRegression(max_iter = 200)
     grid_search = GridSearchCV(log_reg, param_grid, cv = 5, scoring = "accuracy", verbose = 1, n_jobs = -1)
-    
+
     print("🔄 Entraînement Régression Logistique...")
     grid_search.fit(X, y)
     best_log_reg = grid_search.best_estimator_
-    
-    # Log des hyperparamètres optimaux
+
+    # Log hyperparams
     mlflow.log_params(grid_search.best_params_)
-    
-    # Évaluation et logging
+
+    # Évaluation
     y_pred = best_log_reg.predict(X)
     acc = accuracy_score(y, y_pred)
     f1 = f1_score(y, y_pred)
     mlflow.log_metric("final_accuracy", acc)
     mlflow.log_metric("final_f1_score", f1)
-    
-    # Sauvegarde
+
+    # Sauvegarde locale
     joblib.dump(best_log_reg, model_path)
     print(f"✅ Modèle sauvegardé sous {model_path}")
+
+    # Log modèle dans MLFlow + Registry
+    mlflow.sklearn.log_model(best_log_reg, artifact_path = "logreg_model")
+    run_id = mlflow.active_run().info.run_id
+    model_uri = f"runs:/{run_id}/logreg_model"
+    mlflow.register_model(model_uri, "sentiment_model_logreg")
+
     suivi_temps_ressources(start, "Régression Logistique")
     return best_log_reg
-
 
 
 # Random Forest
 @mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def train_random_forest(X_train, y_train, model_path = "../models_saved/rf_model.pkl", force_retrain = False):
-    import mlflow
-    
     if os.path.exists(model_path) and not force_retrain:
         print("✅ Modèle RandomForest déjà existant. Chargement...")
         return joblib.load(model_path)
-    
+
     start = time.time()
     rf = RandomForestClassifier(n_estimators = 100, max_depth = 10, n_jobs = -1)
     rf.fit(X_train, y_train)
-    
+
     # Logging hyperparams
     mlflow.log_params({
         "n_estimators": 100,
         "max_depth": 10
     })
-    
-    # Logging métriques sur train
+
+    # Logging métriques
     y_pred = rf.predict(X_train)
     acc = accuracy_score(y_train, y_pred)
     f1 = f1_score(y_train, y_pred)
     mlflow.log_metric("final_accuracy", acc)
     mlflow.log_metric("final_f1_score", f1)
-    
+
+    # Sauvegarde locale
     joblib.dump(rf, model_path)
     print(f"✅ Modèle RandomForest sauvegardé sous {model_path}")
+
+    # Log modèle dans MLFlow + Registry
+    mlflow.sklearn.log_model(rf, artifact_path="rf_model")
+    run_id = mlflow.active_run().info.run_id
+    model_uri = f"runs:/{run_id}/rf_model"
+    mlflow.register_model(model_uri, "sentiment_model_rf")
+
     suivi_temps_ressources(start, "RandomForest")
     return rf
-
 
 
 # LightGBM
 @mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "../models_saved/lgbm_model.txt", force_retrain = False):
-    import mlflow
-    
     if os.path.exists(model_path) and not force_retrain:
         print("✅ Modèle LightGBM existant. Chargement...")
         return lgb.Booster(model_file = model_path)
@@ -118,7 +126,6 @@ def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "../models_saved
 
     print("🚀 Entraînement LightGBM...")
 
-    # Entraînement
     lgbm_model = lgb.train(
         params,
         lgb_train,
@@ -127,10 +134,8 @@ def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "../models_saved
         callbacks = [early_stopping(stopping_rounds = 10), log_evaluation(period = 10)]
     )
 
-    # Logging params
     mlflow.log_params(params)
 
-    # Évaluation finale
     y_val_pred = (lgbm_model.predict(X_val) > 0.5).astype(int)
     acc = accuracy_score(y_val, y_val_pred)
     f1 = f1_score(y_val, y_val_pred)
@@ -138,15 +143,17 @@ def train_lightgbm(X_train, y_train, X_val, y_val, model_path = "../models_saved
     mlflow.log_metric("final_accuracy", acc)
     mlflow.log_metric("final_f1_score", f1)
 
-    # Sauvegarde du modèle
     lgbm_model.save_model(model_path)
     print(f"✅ Modèle LightGBM sauvegardé sous {model_path}")
 
+    # Log modèle dans MLFlow + Registry
+    mlflow.lightgbm.log_model(lgbm_model, artifact_path="lgbm_model")
+    run_id = mlflow.active_run().info.run_id
+    model_uri = f"runs:/{run_id}/lgbm_model"
+    mlflow.register_model(model_uri, "sentiment_model_lgbm")
+
     suivi_temps_ressources(start, "LightGBM")
     return lgbm_model
-
-
-
 
 
 # FastText Supervised Training
@@ -160,6 +167,18 @@ def train_fasttext_supervised(file_path = "../models_saved/tweets_fasttext.txt",
     model = fasttext.train_supervised(file_path, epoch = 10, wordNgrams = 2, dim = 300)
     model.save_model(model_path)
     print(f"✅ Modèle FastText sauvegardé sous {model_path}")
+
+    # Logging dans MLFlow
+    mlflow.log_param("epoch", 10)
+    mlflow.log_param("wordNgrams", 2)
+    mlflow.log_param("dim", 300)
+
+    mlflow.log_artifact(model_path, artifact_path="fasttext_model")
+
+    run_id = mlflow.active_run().info.run_id
+    model_uri = f"runs:/{run_id}/fasttext_model/{os.path.basename(model_path)}"
+    mlflow.register_model(model_uri, "sentiment_model_fasttext")
+
     return model
 
 
@@ -188,12 +207,9 @@ def train_lstm_model(X_embeddings, y_labels, model_path = "../models_saved/lstm_
 
     model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
     early_stop = EarlyStopping(monitor = 'val_loss', patience = 3, restore_best_weights = True)
-    
     mlflow_callback = MLflowCallback()
-    
+
     print("🚀 Entraînement LSTM...")
-    # history = model.fit(X_train_reshaped, y_train, validation_data = (X_test_reshaped, y_test),
-    #                     epochs = 10, batch_size = 256, callbacks = [early_stop], verbose = 1)
     history = model.fit(
         X_train_reshaped, y_train,
         validation_data = (X_test_reshaped, y_test),
@@ -204,8 +220,14 @@ def train_lstm_model(X_embeddings, y_labels, model_path = "../models_saved/lstm_
 
     model.save(model_path)
     print(f"✅ Modèle LSTM sauvegardé sous {model_path}")
-    suivi_temps_ressources(start, "LSTM")
 
+    # Logging du modèle
+    mlflow.keras.log_model(model, artifact_path="lstm_model")
+    run_id = mlflow.active_run().info.run_id
+    model_uri = f"runs:/{run_id}/lstm_model"
+    mlflow.register_model(model_uri, "sentiment_model_lstm")
+
+    suivi_temps_ressources(start, "LSTM")
     return model, (X_test_reshaped, y_test), history
 
 
@@ -221,7 +243,6 @@ def train_distilbert_model(tokenized_dataset, model_save_path = "../models_saved
     print("🚀 Fine-tuning DistilBERT...")
     model = DistilBertForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels = 2)
 
-    # Vérification ClassLabel pour stratification correcte
     if tokenized_dataset.features['label'].__class__.__name__ != 'ClassLabel':
         num_classes = len(set(tokenized_dataset['label']))
         tokenized_dataset = tokenized_dataset.cast_column('label', ClassLabel(num_classes = num_classes))
@@ -244,7 +265,7 @@ def train_distilbert_model(tokenized_dataset, model_save_path = "../models_saved
         metric_for_best_model = "accuracy",
         logging_dir = "../models_saved/logs",
         logging_steps = 50,
-        report_to = "mlflow"  # CLÉ POUR TRACKING DÉTAILLÉ MLFlow
+        report_to = "mlflow"
     )
 
     def compute_metrics(eval_pred):
@@ -265,5 +286,10 @@ def train_distilbert_model(tokenized_dataset, model_save_path = "../models_saved
     trainer.train()
     model.save_pretrained(model_save_path)
     print(f"✅ Modèle DistilBERT sauvegardé sous {model_save_path}")
-    return model, trainer, test_dataset
 
+    mlflow.pytorch.log_model(model, artifact_path="distilbert_model")
+    run_id = mlflow.active_run().info.run_id
+    model_uri = f"runs:/{run_id}/distilbert_model"
+    mlflow.register_model(model_uri, "sentiment_model_distilbert")
+
+    return model, trainer, test_dataset

@@ -4,7 +4,8 @@
 Prototype IA pour anticiper les bad buzz sur Twitter pour la compagnie aérienne **Air Paradis**.
 
 ## Prérequis :
-Python 3.10.11 recomandé.
+- Python 3.10.11 recommandé.
+- Espace disque suffisant pour stocker embeddings et modèles (~3 Go).
 
 ## Approches Modélisées
 1. **Modèle Classique :** Logistic Regression + TF-IDF
@@ -12,13 +13,14 @@ Python 3.10.11 recomandé.
 3. **Modèle BERT :** DistilBERT fine-tuné
 
 ## Pipeline MLOps Intégré
-- **Tracking expérimentations :** via MLFlow
-- **Déploiement API :** FastAPI exposé sur Cloud (Railway / AWS EC2 / HF Spaces)
+- **Tracking expérimentations :** via MLFlow (lancé directement depuis le notebook)
+- **Gestion du Model Registry :** via MLflow (avec backend SQLite local)
+- **Déploiement API :** FastAPI exposé sur Cloud (Railway / AWS EC2 / Hugging Face Spaces)
 - **CI/CD :** GitHub Actions (automatisé)
 - **Monitoring :** Suivi des erreurs utilisateur, déclenchement d'alertes
 
 ## Modèles & Checkpoints
-Tous les modèles et résultats intermédiaires sont stockés dans le dossier "models_saved"
+Tous les modèles, embeddings et résultats intermédiaires sont stockés dans le dossier **`models_saved/`**.
 
 ## Arborescence
 
@@ -29,7 +31,7 @@ project_root/
 │   ├── evaluate.py
 │   ├── utils.py
 │   └── api/
-│       └── main.py
+│       └── api.py
 ├── notebooks/
 │   └── P7_main_notebook.ipynb
 ├── requirements.py
@@ -38,18 +40,21 @@ project_root/
 └── .gitignore
 ```
 
-## Installation
+## Installation des dépendances
 pip install -r requirements.txt
 
 
 ## Lancement API (local)
-uvicorn src.api.main:app --reload
+uvicorn src.api.api:app --reload
 
 #  Suivi des Expérimentations avec MLflow
 
 ##  Lancement du serveur MLflow local :
 - Placez-vous à la racine du projet dans votre terminal :
 mlflow ui --backend-store-uri ./mlruns
+
+## Lancement du MLFlow Tracking Server
+scripts\launch_mlflow_server.bat
 
 - Ouvrez votre navigateur et accédez à :
 http://127.0.0.1:5000

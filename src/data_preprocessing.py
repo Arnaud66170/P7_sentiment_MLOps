@@ -30,7 +30,7 @@ lemmatizer = WordNetLemmatizer()
 analyzer = SentimentIntensityAnalyzer()
 
 
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+# @mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def clean_text(text):
     text = text.lower()
     text = re.sub(r'http\S+|www\S+', '', text)
@@ -41,20 +41,20 @@ def clean_text(text):
     return text
 
 
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+# @mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def lemmatize_text(text):
     doc = nlp(text)
     return ' '.join([token.lemma_ for token in doc if not token.is_stop])
 
 
-@mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+# @mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def preprocess_batch(batch_df):
     batch_df['text'] = batch_df['text'].astype(str).apply(clean_text)
     batch_df['text'] = batch_df['text'].apply(lemmatize_text)
     return batch_df
 
 
-@mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
+# @mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
 def preprocess_tweets_parallel(df, filename = "../models_saved/cleaned_tweets.pkl", n_jobs = -1, batch_size = 50000):
     if os.path.exists(filename):
         print(f"✅ Chargement des tweets nettoyés depuis {filename}")

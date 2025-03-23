@@ -1,0 +1,20 @@
+# Empêche d'ajouter les dossiers inutiles ou sensibles dans l'image
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Dossier des logs
+logs/
+
+# Fichier .env (pour ne pas inclure tes secrets dans l'image)
+.env
+
+# Fichiers de modèles locaux (car tu charges RF via MLflow, FastText via URL)
+models_saved/
+
+# Cache et autres fichiers inutiles
+*.db
+*.sqlite
+*.h5
+.DS_Store

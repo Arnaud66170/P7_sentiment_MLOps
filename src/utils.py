@@ -4,6 +4,7 @@ import pickle
 import joblib
 import psutil
 import mlflow
+import socket
 import subprocess
 from functools import wraps
 
@@ -82,3 +83,25 @@ def launch_mlflow_ui(port = 5000):
     except Exception as e:
         print(f"❌ Impossible de démarrer MLFlow UI : {e}")
 
+
+# Démarrage du serveur MLflow localement avec backend SQLite.
+def start_mlflow_server(port=5000, backend_db_path='mlflow.db', artifact_root='./mlruns'):
+    # Check si le port est déjà utilisé
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        if s.connect_ex(('127.0.0.1', port)) == 0:
+            print(f"✅ MLflow Server déjà actif sur http://127.0.0.1:{port}")
+            return
+
+    # Créer dossier artifacts si besoin
+    os.makedirs(artifact_root, exist_ok=True)
+
+    print("🚀 Démarrage du serveur MLflow (SQLite backend)...")
+    subprocess.Popen([
+        "mlflow", "server",
+        "--backend-store-uri", f"sqlite:///{backend_db_path}",
+        "--default-artifact-root", artifact_root,
+        "--host", "127.0.0.1",
+        "--port", str(port)
+    ])
+    time.sleep(5)  # Laisser le serveur démarrer
+    print(f"✅ MLflow UI disponible sur : http://127.0.0.1:{port}")

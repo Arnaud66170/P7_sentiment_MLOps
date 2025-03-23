@@ -173,14 +173,6 @@ import subprocess
 import pytest
 import requests
 
-# Optional Cloud Monitoring (commented out)
-# from azure.monitor.query import LogsQueryClient
-# from azure.mgmt.monitor import MonitorManagementClient
-# from azure.identity import DefaultAzureCredential
-
-
-
-# ====================================
 # MESSAGES DE CONFIRMATION
-# ====================================
+
 print("\n✅ Toutes les librairies sont présentes et prêtes à être utilisées !\n")
