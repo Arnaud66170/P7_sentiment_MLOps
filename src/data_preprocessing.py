@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import spacy
 import nltk
+import mlflow
 nltk.download('vader_lexicon')
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer

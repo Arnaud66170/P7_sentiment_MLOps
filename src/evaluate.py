@@ -8,6 +8,7 @@ from sklearn.metrics import accuracy_score, f1_score, classification_report, con
 from transformers import Trainer
 from datasets import ClassLabel
 from utils import mlflow_run_safety
+import mlflow
 
 
 # Évaluation classification
