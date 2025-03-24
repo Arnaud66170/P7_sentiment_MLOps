@@ -1,7 +1,11 @@
-# Ignorer dataset
+# =========================
+# IGNORER DATASETS
+# =========================
 data/tweets.csv
 
-# Sauvegardes des modèles
+# =========================
+# MODELES SAUVEGARDES
+# =========================
 models_saved/
 distilbert_output/
 distilbert_results/
@@ -11,24 +15,40 @@ tmp_trainer/
 mlruns/
 logs/
 env_p7_MLOps/
-
-__pycache__/
-# Ignorer checkpoints Jupyter
-**/.ipynb_checkpoints/
-
-# Fichiers modèles ou lourds
 models/
-mlruns/
-*.txt
-!requirements.txt
-*.pkl
-*.joblib
-*.h5
-logs/
-distilbert_output/
+
+# EXCEPTION : garder le dossier src/api/models_saved vide
 !src/api/models_saved/
 !src/api/models_saved/.gitkeep
 
-# Fichiers temporaires
-*.log
+# =========================
+# FICHIERS TEMPORAIRES
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 *.tmp
+*.log
+*.db
+*.sqlite
+.DS_Store
+
+# =========================
+# FICHIERS MODELES OU LOURDS
+# =========================
+*.pkl
+*.joblib
+*.h5
+*.txt
+!requirements.txt
+
+# =========================
+# NOTEBOOKS
+# =========================
+**/.ipynb_checkpoints/
+
+# =========================
+# FICHIERS ENV
+# =========================
+.env
