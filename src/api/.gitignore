@@ -10,3 +10,5 @@ models_saved/
 *.db
 *.sqlite
 .DS_Store
+!src/api/models_saved/
+!src/api/models_saved/.gitkeep

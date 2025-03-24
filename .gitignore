@@ -26,6 +26,8 @@ mlruns/
 *.h5
 logs/
 distilbert_output/
+!src/api/models_saved/
+!src/api/models_saved/.gitkeep
 
 # Fichiers temporaires
 *.log
