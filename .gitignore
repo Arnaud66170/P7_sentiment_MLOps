@@ -20,6 +20,7 @@ models/
 # EXCEPTION : garder le dossier src/api/models_saved vide
 !src/api/models_saved/
 !src/api/models_saved/.gitkeep
+!
 
 # =========================
 # FICHIERS TEMPORAIRES
