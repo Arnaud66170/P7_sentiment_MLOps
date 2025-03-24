@@ -14,6 +14,10 @@ import requests
 
 # 1 - Initialisation
 
+print(f"ENV VAR FASTTEXT_MODEL_URL: {os.getenv('FASTTEXT_MODEL_URL')}")
+print(f"ENV VAR MLFLOW_TRACKING_URI: {os.getenv('MLFLOW_TRACKING_URI')}")
+print(f"ENV VAR LOG_PATH: {os.getenv('LOG_PATH')}")
+
 
 # 1.1 - Chargement des variables d'environnement
 load_dotenv()
@@ -24,6 +28,9 @@ MLFLOW_MODEL_STAGE = os.getenv("MLFLOW_MODEL_STAGE", "Production")
 FASTTEXT_MODEL_URL = os.getenv("FASTTEXT_MODEL_URL")
 FASTTEXT_LOCAL_PATH = os.getenv("FASTTEXT_LOCAL_PATH", "../models_saved/fasttext_model.ftz")
 LOG_PATH = os.getenv("LOG_PATH", "../logs/misclassified_tweets.log")
+
+print("DEBUG - Variables env :")
+print(f"FASTTEXT_MODEL_URL: {os.getenv('FASTTEXT_MODEL_URL')}")
 
 app = FastAPI(title="Air Paradis - Sentiment Analysis API (FastText + RF)")
 
