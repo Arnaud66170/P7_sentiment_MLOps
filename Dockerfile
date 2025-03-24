@@ -1,27 +1,28 @@
-# 1 - Base image
+# 1 - Image de base
 FROM python:3.10-slim
 
-# 2 - Set work directory
+# 2 - Fichier de travail
 WORKDIR /app
 
-# 3 - Install system dependencies
+# 3 - Installation dépendances système
 RUN apt-get update && apt-get install -y \
     build-essential \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# 4 - Copy requirements & install
+# 4 - Copie des insattl et requirements
 COPY requirements.txt .
 
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
+RUN pip install gdown
 
-# 5 - Copy rest of the app
+# 5 - Copie du reste de l'app
 COPY . .
 
-# 6 - Expose port
+# 6 - Exposition du port
 EXPOSE 8000
 
-# 7 - Launch command
+# 7 - Lancement de commande
 CMD ["uvicorn", "src.api.api:app", "--host", "0.0.0.0", "--port", "8000"]
 

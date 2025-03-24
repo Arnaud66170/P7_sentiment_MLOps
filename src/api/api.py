@@ -10,6 +10,7 @@ import mlflow
 from mlflow import sklearn
 from dotenv import load_dotenv
 import requests
+import gdown
 
 
 # 1 - Initialisation
@@ -46,10 +47,12 @@ class TweetRequest(BaseModel):
 
 # 3.1 - Chargement FastText supervisé (distant ou local)
 if not os.path.exists(FASTTEXT_LOCAL_PATH):
-    print(f"📥 Téléchargement du modèle FastText depuis {FASTTEXT_MODEL_URL}...")
-    r = requests.get(FASTTEXT_MODEL_URL)
-    with open(FASTTEXT_LOCAL_PATH, "wb") as f:
-        f.write(r.content)
+    print(f"📥 Téléchargement du modèle FastText depuis Google Drive...")
+
+    # ID de ton fichier Google Drive
+    gdrive_id = "12xMFK2HIb2OnJ4RMBldCberhssIt61S8"
+    gdown.download(f"https://drive.google.com/uc?id={gdrive_id}", FASTTEXT_LOCAL_PATH, quiet=False)
+
     print("✅ Modèle FastText téléchargé.")
 
 fasttext_model = fasttext.load_model(FASTTEXT_LOCAL_PATH)
