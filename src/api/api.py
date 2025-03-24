@@ -26,7 +26,7 @@ MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI")
 MLFLOW_MODEL_NAME = os.getenv("MLFLOW_MODEL_NAME", "random_forest_sentiment")
 MLFLOW_MODEL_STAGE = os.getenv("MLFLOW_MODEL_STAGE", "Production")
 FASTTEXT_MODEL_URL = os.getenv("FASTTEXT_MODEL_URL")
-FASTTEXT_LOCAL_PATH = os.getenv("FASTTEXT_LOCAL_PATH", "../models_saved/fasttext_model.ftz")
+FASTTEXT_LOCAL_PATH = os.getenv("FASTTEXT_LOCAL_PATH", "./models_saved/fasttext_model.ftz")
 LOG_PATH = os.getenv("LOG_PATH", "../logs/misclassified_tweets.log")
 
 print("DEBUG - Variables env :")
