@@ -1,26 +1,24 @@
 # Dockerfile
-# parametres AWS EC2
-
-# 1. Choix de l'image de base
+# 1 - Utilisation d'une image Python légère
 FROM python:3.9-slim
 
-# 2. Définir le dossier de travail
+# 2 - Définition du dossier de travail
 WORKDIR /app
 
-# 3. Copier les fichiers nécessaires
-COPY ./requirements.txt /app/requirements.txt
-COPY ./api.py /app/api.py
-COPY ./models_saved /app/models_saved
+# 3 - Copie des fichiers nécessaires
 COPY ./src /app/src
+COPY ./models_saved /app/models_saved
+COPY ./requirements.txt /app/requirements.txt
 
-# 4. Installer les dépendances
+# 4 - Installation des dépendances
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-# 5. Exposer le port de l'API
+# 5 - Exposition du port API
 EXPOSE 8000
 
-# 6. Lancer l'API
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+# 6 - Commande de lancement API
+CMD ["uvicorn", "src.api.api:app", "--host", "0.0.0.0", "--port", "8000"]
+
 
 
 

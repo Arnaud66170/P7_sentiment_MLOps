@@ -1,24 +1,32 @@
 # Image avec FastText précompilé
-FROM ghcr.io/facebookresearch/fasttext:latest
+FROM ubuntu:22.04
 
-# Installer Python packages nécessaires
+# Installer dépendances système
 RUN apt-get update && apt-get install -y \
+    python3 \
     python3-pip \
-    && pip3 install \
-    fastapi uvicorn scikit-learn mlflow python-dotenv gdown emoji pydantic requests
+    build-essential \
+    g++ \
+    gcc \
+    libffi-dev \
+    libssl-dev \
+    fasttext \
+    && rm -rf /var/lib/apt/lists/*
 
-# Créer dossier de travail
+# Installer les dépendances Python
+RUN pip3 install --no-cache-dir fasttext==0.9.2 fastapi uvicorn scikit-learn mlflow python-dotenv gdown emoji pydantic requests
+
+# Créer dossier travail
 WORKDIR /app
 
-# Copier le code source API
+# Copier ton code source API
 COPY ./src /app/src
 
-# Exposer le port
+# Exposer port
 EXPOSE 8000
 
-# Lancer l'API
+# Lancer API
 CMD ["uvicorn", "src.api.api:app", "--host", "0.0.0.0", "--port", "8000"]
-
 
 
 

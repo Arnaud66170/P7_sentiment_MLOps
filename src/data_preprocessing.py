@@ -127,7 +127,7 @@ def vectorize_tweets(X_text_full, X_text_reduced, y_full, y_reduced):
     X_use = np.array([use_model([text]).numpy().flatten() for text in X_text_reduced])
 
     print("✅ Vectorisation terminée.")
-    return X_bow, X_tfidf, X_fasttext, X_use, y_reduced
+    return X_bow, X_tfidf, X_fasttext, X_use, y_reduced, tfidf_vectorizer
 
 
 # Fonction de vectorisation des tweets (BoW, TF-IDF, FastText, USE) + sauvegarde des labels USE
@@ -137,26 +137,30 @@ def vectorize_and_save(X_text_full, X_text_reduced, y_full, y_reduced,
                        tfidf_file = "../models_saved/X_tfidf.pkl", 
                        fasttext_file = "../models_saved/X_fasttext.pkl", 
                        use_file = "../models_saved/X_use.pkl", 
-                       labels_file = "../models_saved/y_use.pkl"):
-    """
-    Fonction pour vectoriser les tweets (BoW, TF-IDF, FastText, USE) + sauvegarder les labels USE
-    """
-    if all(os.path.exists(f) for f in [bow_file, tfidf_file, fasttext_file, use_file, labels_file]):
+                       labels_file = "../models_saved/y_use.pkl",
+                       force_revectorize=False):
+    
+    if all(os.path.exists(f) for f in [bow_file, tfidf_file, fasttext_file, use_file, labels_file]) and not force_revectorize:
         print("📂 Chargement des matrices vectorisées existantes...")
         X_bow = joblib.load(bow_file)
         X_tfidf = joblib.load(tfidf_file)
         X_fasttext = joblib.load(fasttext_file)
         X_use = joblib.load(use_file)
         y_use = joblib.load(labels_file)
-    else:
-        print("🚀 Vectorisation en cours...")
-        X_bow, X_tfidf, X_fasttext, X_use, y_use = vectorize_tweets(X_text_full, X_text_reduced, y_full, y_reduced)
+        # ➤ Pas de vectorizer ici
+        return X_bow, X_tfidf, X_fasttext, X_use, y_use
 
-        joblib.dump(X_bow, bow_file)
-        joblib.dump(X_tfidf, tfidf_file)
-        joblib.dump(X_fasttext, fasttext_file)
-        joblib.dump(X_use, use_file)
-        joblib.dump(y_use, labels_file)
+    # Sinon, on revectorise :
+    print("🚀 Vectorisation en cours...")
+    X_bow, X_tfidf, X_fasttext, X_use, y_use, tfidf_vectorizer = vectorize_tweets(X_text_full, X_text_reduced, y_full, y_reduced)
+
+    joblib.dump(X_bow, bow_file)
+    joblib.dump(X_tfidf, tfidf_file)
+    joblib.dump(X_fasttext, fasttext_file)
+    joblib.dump(X_use, use_file)
+    joblib.dump(y_use, labels_file)
+    joblib.dump(tfidf_vectorizer, "../models_saved/tfidf_vectorizer.pkl")
+    print("✅ Vectorizer sauvegardé.")
 
     return X_bow, X_tfidf, X_fasttext, X_use, y_use
 
