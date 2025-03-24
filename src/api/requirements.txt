@@ -1,8 +1,11 @@
 fastapi
 uvicorn
-scikit-learn
+numpy
 fasttext
+scikit-learn
 mlflow
 python-dotenv
-numpy
+gdown
 emoji
+pydantic
+requests
