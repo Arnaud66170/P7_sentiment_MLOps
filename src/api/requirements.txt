@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 numpy
-fasttext
+# fasttext
 scikit-learn
 mlflow
 python-dotenv

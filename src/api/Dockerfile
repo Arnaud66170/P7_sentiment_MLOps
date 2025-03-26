@@ -1,32 +1,53 @@
-# Image avec FastText précompilé
-FROM ubuntu:22.04
+# 1 - Image de base légère avec Python 3.9
+FROM python:3.9-slim
 
-# Installer dépendances système
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    build-essential \
-    g++ \
-    gcc \
-    libffi-dev \
-    libssl-dev \
-    fasttext \
-    && rm -rf /var/lib/apt/lists/*
-
-# Installer les dépendances Python
-RUN pip3 install --no-cache-dir fasttext==0.9.2 fastapi uvicorn scikit-learn mlflow python-dotenv gdown emoji pydantic requests
-
-# Créer dossier travail
+# 2 - Dossier de travail
 WORKDIR /app
 
-# Copier ton code source API
+# 3 - Copier les fichiers nécessaires
 COPY ./src /app/src
+COPY ./models_saved /app/models_saved
+COPY ./requirements.txt /app/requirements.txt
 
-# Exposer port
+# 4 - Installer les dépendances Python
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# 5 - Exposer le port de l’API
 EXPOSE 8000
 
-# Lancer API
+# 6 - Commande de lancement de l’API
 CMD ["uvicorn", "src.api.api:app", "--host", "0.0.0.0", "--port", "8000"]
+
+
+# # Image avec FastText précompilé
+# FROM ubuntu:22.04
+
+# # Installer dépendances système
+# RUN apt-get update && apt-get install -y \
+#     python3 \
+#     python3-pip \
+#     build-essential \
+#     g++ \
+#     gcc \
+#     libffi-dev \
+#     libssl-dev \
+#     fasttext \
+#     && rm -rf /var/lib/apt/lists/*
+
+# # Installer les dépendances Python
+# RUN pip3 install --no-cache-dir fasttext==0.9.2 fastapi uvicorn scikit-learn mlflow python-dotenv gdown emoji pydantic requests
+
+# # Créer dossier travail
+# WORKDIR /app
+
+# # Copier ton code source API
+# COPY ./src /app/src
+
+# # Exposer port
+# EXPOSE 8000
+
+# # Lancer API
+# CMD ["uvicorn", "src.api.api:app", "--host", "0.0.0.0", "--port", "8000"]
 
 
 
