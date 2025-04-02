@@ -22,7 +22,12 @@ from transformers import DistilBertTokenizerFast
 from datasets import Dataset, load_from_disk
 from utils import mlflow_run_safety
 
-nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
+try:
+    nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
+except OSError:
+    from spacy.cli import download
+    download("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 nltk.download('stopwords')
 nltk.download('wordnet')
 stop_words = set(stopwords.words('english'))
