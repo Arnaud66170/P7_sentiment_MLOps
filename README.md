@@ -1,71 +1,157 @@
-# Projet P7 - Analyse de Sentiments & MLOps
+# 🧠 Projet P7 - Analyse de Sentiments & Pipeline MLOps
 
-## Objectif
-Prototype IA pour anticiper les bad buzz sur Twitter pour la compagnie aérienne **Air Paradis**.
+## 🎯 Objectif
+Développer un prototype d’**IA de prédiction de sentiment** pour anticiper les bad buzz sur **Twitter**, dans le cadre d’une mission pour la compagnie **Air Paradis**.
 
-## Prérequis :
-- Python 3.10.11 recommandé.
-- Espace disque suffisant pour stocker embeddings et modèles (~3 Go).
+---
 
-## Approches Modélisées
-1. **Modèle Classique :** Logistic Regression + TF-IDF
-2. **Modèle Avancé :** Embeddings (FastText, USE) + LSTM / LightGBM
-3. **Modèle BERT :** DistilBERT fine-tuné
+## 🗂️ Approches Modélisées
 
-## Pipeline MLOps Intégré
-- **Tracking expérimentations :** via MLFlow (lancé directement depuis le notebook)
-- **Gestion du Model Registry :** via MLflow (avec backend SQLite local)
-- **Déploiement API :** FastAPI exposé sur Cloud (Railway / AWS EC2 / Hugging Face Spaces)
-- **CI/CD :** GitHub Actions (automatisé)
-- **Monitoring :** Suivi des erreurs utilisateur, déclenchement d'alertes
+| Catégorie             | Modèle(s) utilisé(s)                              |
+|----------------------|----------------------------------------------------|
+| 🔹 Classique          | TF-IDF + Logistic Regression                      |
+| 🔸 Intermédiaire      | FastText + Random Forest / LSTM                   |
+| 🔸 Embedding avancé   | USE + LightGBM                                    |
+| 🧠 Deep Learning      | LSTM (FastText)                                    |
+| 🧠 Transformers       | DistilBERT fine-tuné sur 100k tweets              |
 
-## Modèles & Checkpoints
-Tous les modèles, embeddings et résultats intermédiaires sont stockés dans le dossier **`models_saved/`**.
+---
 
-## Arborescence
+## ⚙️ Pipeline MLOps Intégré
 
-project_root/
+- **🧪 Tracking des expérimentations** : `MLflow` (runs automatiques via décorateurs)
+- **📦 Model Registry MLflow** : backend local `SQLite`, support REST API
+- **🚀 Déploiement API** :
+  - `FastAPI` (Railway / AWS EC2)
+  - `Gradio UI` (Hugging Face Spaces)
+- **🔁 CI/CD** : `GitHub Actions` (push = déploiement automatisé)
+- **📉 Monitoring** :
+  - Feedback utilisateur intégré
+  - Logs des prédictions erronées
+  - Déclenchement d’alerte mail si ≥ 3 erreurs en < 5 min
+
+---
+
+## 🧱 Arborescence du Projet
+
+```
+P7_sentiment_MLOps/
+├── notebooks/
+│   └── P7_main_notebook.ipynb
+│   └── mlflow_registry_management.ipynb
 ├── src/
 │   ├── data_preprocessing.py
 │   ├── model_training.py
 │   ├── evaluate.py
 │   ├── utils.py
 │   └── api/
-│       └── api.py
-├── notebooks/
-│   └── P7_main_notebook.ipynb
-├── requirements.py
+│       ├── api.py
+│       ├── app.py (interface Gradio)
+│       └── alert_email.py
+├── models_saved/
+│   ├── log_reg_model.pkl
+│   ├── rf_model.pkl
+│   ├── lstm_model.h5
+│   ├── distilbert_model/
+│   └── comparaison_resultats.csv
+├── huggingface_space/
+│   ├── app.py
+│   └── utils/
+├── .github/workflows/
+│   └── deploy_railway.yml
+│   └── deploy_huggingface.yml
+├── tests/
+│   └── test_api.py
 ├── requirements.txt
+├── requirements.py
 ├── README.md
 └── .gitignore
 ```
 
-## Installation des dépendances
+---
+
+## 📦 Installation des dépendances
+
+```bash
 pip install -r requirements.txt
+```
 
+---
 
-## Lancement API (local)
+## 🚀 Lancement de l’API en local
+
+```bash
 uvicorn src.api.api:app --reload
+```
 
-#  Suivi des Expérimentations avec MLflow
+---
 
-##  Lancement du serveur MLflow local :
-- Placez-vous à la racine du projet dans votre terminal :
+## 📊 Suivi des expérimentations avec MLflow
+
+### Démarrage du serveur MLflow local
+
+```bash
 mlflow ui --backend-store-uri ./mlruns
+```
 
-## Lancement du MLFlow Tracking Server
-scripts\launch_mlflow_server.bat
+Accédez à l’interface sur : http://127.0.0.1:5000
 
-- Ouvrez votre navigateur et accédez à :
-http://127.0.0.1:5000
+### Contenu visible dans MLflow
 
-## Contenu visible dans MLflow :
+| Onglet           | Détails                                                                 |
+|------------------|-------------------------------------------------------------------------|
+| **Experiments**  | Expérience nommée `P7_sentiment_analysis`                               |
+| **Runs**         | Chaque exécution (LogReg, LSTM, etc.) génère un run distinct            |
+| **Metrics**      | Accuracy & F1-score (ex : `lstm_f1`, `distilbert_accuracy`, etc.)       |
+| **Artifacts**    | Fichiers comme `comparaison_resultats.csv`, matrices, modèles `.pkl/.h5`|
 
-| Onglet          | Contenu                                                                                         |
-|----------------|--------------------------------------------------------------------------------------------------|
-| **Experiments** | Expérience nommée `Comparaison finale`                                                            |
-| **Runs**        | Chaque exécution du notebook génère un run distinct                                               |
-| **Metrics**     | Accuracy & F1-score de chaque modèle (par ex : `logreg_accuracy`, `distilbert_f1`, etc.)           |
-| **Artifacts**   | Tableau comparatif final sauvegardé : `models_saved/comparaison_resultats.csv`                    |
+---
 
-Vous pourrez ainsi visualiser les performances des modèles, télécharger les résultats et assurer le suivi complet de vos entraînements.
+## 🌐 Interfaces Utilisateurs
+
+### Gradio (Hugging Face Spaces)
+
+> URL publique : https://huggingface.co/spaces/arnaud66170/P7-airparadis-sentiment
+
+Fonctionnalités principales :
+- Test interactif de tweets (copier-coller ou upload CSV)
+- Prédiction + Emoji + Coloration dynamique
+- Feedback utilisateur ✅ / ❌
+- Historique + Graphiques en temps réel
+- Export CSV des prédictions
+- Alerte e-mail automatisée via microservice FastAPI
+
+---
+
+## ✉️ Alerte e-mail automatisée
+
+> En cas de **≥ 3 erreurs en < 5 minutes**, une alerte est envoyée à l'équipe.
+
+- Service SMTP hébergé sur Railway (`alert_mail_api`)
+- Appelé par l'interface Gradio via requête POST sécurisée
+
+---
+
+## 📈 Comparaison des modèles (dernière mise à jour)
+
+| Modèle                    | Accuracy | F1-score | Temps       | Ressources |
+|---------------------------|----------|----------|-------------|------------|
+| TF-IDF + LogisticRegression | 0.76     | 0.76     | 💨 Rapide    | CPU        |
+| FastText + Random Forest   | 0.83     | 0.83     | ⚡ Moyen     | CPU        |
+| FastText + LSTM            | 0.835    | 0.835    | ⏱️ 3 min     | CPU        |
+| USE + LightGBM             | 0.82     | 0.82     | ⚡ Moyen     | CPU        |
+| DistilBERT fine-tuné       | 0.85     | 0.85     | ⏳ Lent      | CPU (RAM++)|
+
+---
+
+## ✍️ Auteur
+
+👨‍💻 **Arnaud Caille**  
+Parcours Data Scientist & AI Engineer - OpenClassrooms  
+Avril 2025
+
+---
+
+## 📬 Contact
+
+> Pour toute question technique : [via GitHub Issues ou Discussions](https://github.com/Arnaud66170/P7_sentiment_MLOps)
