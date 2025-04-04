@@ -1,10 +1,14 @@
-import os
-import time
+import os, time
+import pandas as pd
 import joblib
 import numpy as np
+import matplotlib.pyplot as plt
 import fasttext
 import lightgbm as lgb
 import mlflow
+import mlflow.keras
+from mlflow.keras import MLflowCallback
+from docx import Document
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -16,7 +20,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 import tensorflow as tf
 from transformers import DistilBertForSequenceClassification, Trainer, TrainingArguments
 from utils import mlflow_run_safety, suivi_temps_ressources
-from mlflow.keras import MLflowCallback
+
 
 
 
@@ -180,55 +184,191 @@ def train_fasttext_supervised(file_path = "../models_saved/tweets_fasttext.txt",
     mlflow.register_model(model_uri, "sentiment_model_fasttext")
 
     return model
-
-
-# LSTM Training sur FastText
 @mlflow_run_safety(experiment_name="P7_sentiment_analysis")
-def train_lstm_model(X_embeddings, y_labels, model_path = "../models_saved/lstm_model.h5", force_retrain = False):
+def train_lstm_model(
+    X_embeddings,
+    y_labels,
+    model_base_path="../models_saved/lstm_model",
+    force_retrain=False,
+    lstm_units=128,
+    dropout_rate=0.3,
+    dense_units=64,
+    batch_size=256,
+    epochs=10,
+    optimizer='adam',
+    loss_function='binary_crossentropy',
+    results_csv_path="../results/lstm_experiments_results.csv",
+    resume_doc_path="../results/resume_lstm.docx"
+):
+    # ✅ Créer les dossiers nécessaires si non existants
+    os.makedirs(os.path.dirname(results_csv_path), exist_ok=True)
+    os.makedirs(os.path.dirname(resume_doc_path), exist_ok=True)
+    
     X = np.array(X_embeddings)
     y = np.array(y_labels).astype(int)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, stratify = y, random_state = 70)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=70)
 
-    X_train_reshaped = X_train.reshape((X_train.shape[0], 1, X_train.shape[1]))
-    X_test_reshaped = X_test.reshape((X_test.shape[0], 1, X_test.shape[1]))
+    X_train_reshaped = X_train.reshape((X_train.shape[0], 1, X.shape[1]))
+    X_test_reshaped = X_test.reshape((X_test.shape[0], 1, X.shape[1]))
+
+    # 📁 Génération du nom de fichier basé sur les params
+    filename = f"LSTM_{lstm_units}u_{batch_size}bs_{epochs}ep.h5"
+    model_path = os.path.join(model_base_path + f"_{lstm_units}_{batch_size}_{epochs}.h5")
+
+    if force_retrain and os.path.exists(model_path):
+        os.remove(model_path)
 
     if os.path.exists(model_path) and not force_retrain:
-        print(f"✅ Modèle LSTM déjà existant. Chargement...")
+        print(f"✅ Modèle déjà existant. Chargement : {model_path}")
         model = tf.keras.models.load_model(model_path)
         return model, (X_test_reshaped, y_test), None
 
     start = time.time()
+    mlflow.set_tag("mlflow.runName", f"LSTM_{lstm_units}u_{batch_size}bs_{epochs}ep")
+
+    # Logging des hyperparams
+    mlflow.log_param("lstm_units", lstm_units)
+    mlflow.log_param("dropout_rate", dropout_rate)
+    mlflow.log_param("dense_units", dense_units)
+    mlflow.log_param("batch_size", batch_size)
+    mlflow.log_param("epochs", epochs)
+    mlflow.log_param("optimizer", optimizer)
+    mlflow.log_param("loss_function", loss_function)
+
     model = Sequential()
-    model.add(Bidirectional(LSTM(128), input_shape=(1, X.shape[1])))
-    model.add(Dropout(0.3))
-    model.add(Dense(64, activation = 'relu'))
-    model.add(Dense(1, activation = 'sigmoid'))
+    model.add(Bidirectional(LSTM(lstm_units), input_shape=(1, X.shape[1])))
+    model.add(Dropout(dropout_rate))
+    model.add(Dense(dense_units, activation='relu'))
+    model.add(Dense(1, activation='sigmoid'))
+    model.compile(optimizer=optimizer, loss=loss_function, metrics=['accuracy'])
 
-    model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
-    early_stop = EarlyStopping(monitor = 'val_loss', patience = 3, restore_best_weights = True)
-    mlflow_callback = MLflowCallback()
+    early_stop = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 
-    print("🚀 Entraînement LSTM...")
+    print("🚀 Entraînement en cours...")
     history = model.fit(
         X_train_reshaped, y_train,
-        validation_data = (X_test_reshaped, y_test),
-        epochs = 10, batch_size = 256,
-        callbacks = [early_stop, mlflow_callback],
-        verbose = 1
+        validation_data=(X_test_reshaped, y_test),
+        epochs=epochs,
+        batch_size=batch_size,
+        callbacks=[early_stop],
+        verbose=1
     )
 
-    model.save(model_path)
-    print(f"✅ Modèle LSTM sauvegardé sous {model_path}")
+    # 📊 Log des courbes dans MLflow
+    for epoch in range(len(history.history['loss'])):
+        mlflow.log_metric("train_loss", history.history['loss'][epoch], step=epoch)
+        mlflow.log_metric("val_loss", history.history['val_loss'][epoch], step=epoch)
+        mlflow.log_metric("train_accuracy", history.history['accuracy'][epoch], step=epoch)
+        mlflow.log_metric("val_accuracy", history.history['val_accuracy'][epoch], step=epoch)
 
-    # Logging du modèle
+    # 💾 Sauvegarde modèle + log
+    model.save(model_path)
     mlflow.keras.log_model(model, artifact_path="lstm_model")
     run_id = mlflow.active_run().info.run_id
-    model_uri = f"runs:/{run_id}/lstm_model"
-    mlflow.register_model(model_uri, "sentiment_model_lstm")
+    mlflow.register_model(f"runs:/{run_id}/lstm_model", "sentiment_model_lstm")
 
+    # 📈 Écart accuracy train/val (visuel uniquement)
+    gap_acc = [tr - va for tr, va in zip(history.history['accuracy'], history.history['val_accuracy'])]
+    plt.figure(figsize=(8, 3))
+    plt.plot(gap_acc)
+    plt.title("Écart accuracy (train - val)")
+    plt.xlabel("Epoch")
+    plt.grid(True)
+    plt.tight_layout()
+    gap_plot_path = model_path.replace(".h5", "_gap_acc.png")
+    plt.savefig(gap_plot_path)
+    mlflow.log_artifact(gap_plot_path)
+
+    # 📊 Mise à jour CSV des résultats
+    y_pred = (model.predict(X_test_reshaped) > 0.5).astype(int).flatten()
+    acc = round(accuracy_score(y_test, y_pred), 4)
+    f1 = round(f1_score(y_test, y_pred), 4)
+
+    new_row = pd.DataFrame([{
+        "model_file": os.path.basename(model_path),
+        "lstm_units": lstm_units,
+        "dropout_rate": dropout_rate,
+        "dense_units": dense_units,
+        "batch_size": batch_size,
+        "epochs": epochs,
+        "accuracy": acc,
+        "f1_score": f1
+    }])
+
+    if os.path.exists(results_csv_path):
+        df = pd.read_csv(results_csv_path)
+        df = pd.concat([df, new_row], ignore_index=True)
+    else:
+        df = new_row
+    df.to_csv(results_csv_path, index=False)
+
+    # 🥇 Génération résumé Word avec la meilleure config
+    best = df.sort_values("f1_score", ascending=False).iloc[0]
+    doc = Document()
+    doc.add_heading("Résumé des Entraînements LSTM", level=1)
+    doc.add_heading("Meilleure configuration", level=2)
+    for col in best.index:
+        doc.add_paragraph(f"{col} : {best[col]}")
+    doc.save(resume_doc_path)
+
+    # 🕒 Temps total
     suivi_temps_ressources(start, "LSTM")
+
     return model, (X_test_reshaped, y_test), history
+
+
+
+# LSTM Training sur FastText
+
+
+
+# @mlflow_run_safety(experiment_name="P7_sentiment_analysis")
+# def train_lstm_model(X_embeddings, y_labels, model_path = "../models_saved/lstm_model.h5", force_retrain = False):
+#     X = np.array(X_embeddings)
+#     y = np.array(y_labels).astype(int)
+
+#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, stratify = y, random_state = 70)
+
+#     X_train_reshaped = X_train.reshape((X_train.shape[0], 1, X_train.shape[1]))
+#     X_test_reshaped = X_test.reshape((X_test.shape[0], 1, X_test.shape[1]))
+
+#     if os.path.exists(model_path) and not force_retrain:
+#         print(f"✅ Modèle LSTM déjà existant. Chargement...")
+#         model = tf.keras.models.load_model(model_path)
+#         return model, (X_test_reshaped, y_test), None
+
+#     start = time.time()
+#     model = Sequential()
+#     model.add(Bidirectional(LSTM(128), input_shape=(1, X.shape[1])))
+#     model.add(Dropout(0.3))
+#     model.add(Dense(64, activation = 'relu'))
+#     model.add(Dense(1, activation = 'sigmoid'))
+
+#     model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+#     early_stop = EarlyStopping(monitor = 'val_loss', patience = 3, restore_best_weights = True)
+#     mlflow_callback = MLflowCallback()
+
+#     print("🚀 Entraînement LSTM...")
+#     history = model.fit(
+#         X_train_reshaped, y_train,
+#         validation_data = (X_test_reshaped, y_test),
+#         epochs = 10, batch_size = 256,
+#         callbacks = [early_stop, mlflow_callback],
+#         verbose = 1
+#     )
+
+#     model.save(model_path)
+#     print(f"✅ Modèle LSTM sauvegardé sous {model_path}")
+
+#     # Logging du modèle
+#     mlflow.keras.log_model(model, artifact_path="lstm_model")
+#     run_id = mlflow.active_run().info.run_id
+#     model_uri = f"runs:/{run_id}/lstm_model"
+#     mlflow.register_model(model_uri, "sentiment_model_lstm")
+
+#     suivi_temps_ressources(start, "LSTM")
+#     return model, (X_test_reshaped, y_test), history
 
 
 # DistilBERT Fine-tuning

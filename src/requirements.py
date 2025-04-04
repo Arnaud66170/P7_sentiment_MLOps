@@ -159,6 +159,7 @@ from lightgbm import LGBMClassifier, early_stopping, log_evaluation
 # Experiment Tracking & Optimization
 import mlflow
 import mlflow.sklearn
+import mlflow.keras
 import optuna
 
 # API & Web
@@ -172,6 +173,8 @@ import subprocess
 # Testing & Requests
 import pytest
 import requests
+from docx import Document
+from docx.shared import Inches
 
 # MESSAGES DE CONFIRMATION
 

@@ -1,0 +1,4 @@
+model_file,lstm_units,dropout_rate,dense_units,batch_size,epochs,accuracy,f1_score
+lstm_model_64_128_10.h5,64,0.5,32,128,10,0.7726,0.7716
+lstm_model_128_256_15.h5,128,0.3,64,256,15,0.778,0.7801
+lstm_model_256_64_8.h5,256,0.4,64,64,8,0.7753,0.772
