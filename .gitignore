@@ -17,6 +17,7 @@ logs/
 env_p7_MLOps/
 models/
 /huggingface_space/
+/huggingface_clean/
 
 # EXCEPTION : garder le dossier src/api/models_saved vide
 !src/api/models_saved/

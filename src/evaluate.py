@@ -78,78 +78,88 @@ def evaluate_distilbert_model(model, tokenized_dataset, results_path = "../model
 
 # Comparaison finale des modèles
 @mlflow_run_safety(experiment_name = "P7_sentiment_analysis")
-def get_all_model_scores(models_dict, datasets_dict):
+def get_all_model_scores(models_dict, datasets_dict, training_stats=None):
     from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix
 
     results = {
         'Modèle': [],
         'Accuracy': [],
-        'F1-score': []
+        'F1-score': [],
+        'Temps d\'entraînement (s)': [],
+        'CPU (%)': [],
+        'RAM (%)': []
     }
 
     for model_name, model_obj in models_dict.items():
-        # Cas particulier DistilBERT déjà évalué
-        if model_name == 'distilbert_metrics':
-            results['Modèle'].append('DistilBERT fine-tuné')
+        # Cas particulier DistilBERT et LSTM (meilleures métriques déjà calculées)
+        if model_name in ['distilbert_metrics', 'lstm_metrics']:
+            label = 'DistilBERT fine-tuné' if model_name == 'distilbert_metrics' else 'LSTM (config_2)'
+            results['Modèle'].append(label)
             results['Accuracy'].append(round(model_obj['accuracy'], 4))
             results['F1-score'].append(round(model_obj['f1'], 4))
-            continue
-
-        # Cas particulier VADER baseline
-        if model_name == 'vader_metrics':
+        elif model_name == 'vader_metrics':
             results['Modèle'].append('VADER baseline')
             results['Accuracy'].append(round(model_obj['accuracy'], 4))
             results['F1-score'].append(round(model_obj['f1'], 4))
-            continue
-
-        # Choix dataset associé
-        if model_name == 'logreg':
-            data = datasets_dict['tfidf']
-            X_test, y_test = data['X_test'], data['y_test']
-            y_pred = model_obj.predict(X_test)
-        elif model_name == 'rf':
-            data = datasets_dict['fasttext']
-            X_test, y_test = data['X_test'], data['y_test']
-            y_pred = model_obj.predict(X_test)
-        elif model_name == 'lstm':
-            X_test, y_test = datasets_dict['lstm']
-            y_pred = (model_obj.predict(X_test) > 0.5).astype(int).flatten()
-        elif model_name == 'lgbm':
-            data = datasets_dict['use']
-            X_test, y_test = data['X_test'], data['y_test']
-            y_pred = (model_obj.predict(X_test) > 0.5).astype(int)
         else:
-            continue
+            # Choix dataset associé
+            if model_name == 'logreg':
+                data = datasets_dict['tfidf']
+                X_test, y_test = data['X_test'], data['y_test']
+                y_pred = model_obj.predict(X_test)
+            elif model_name == 'rf':
+                data = datasets_dict['fasttext']
+                X_test, y_test = data['X_test'], data['y_test']
+                y_pred = model_obj.predict(X_test)
+            elif model_name == 'lstm':
+                X_test, y_test = datasets_dict['lstm']
+                y_pred = (model_obj.predict(X_test) > 0.5).astype(int).flatten()
+            elif model_name == 'lgbm':
+                data = datasets_dict['use']
+                X_test, y_test = data['X_test'], data['y_test']
+                y_pred = (model_obj.predict(X_test) > 0.5).astype(int)
+            else:
+                continue
 
-        # Sécuriser les types
-        if isinstance(y_pred[0], str):
-            y_pred = np.array([int(p) for p in y_pred])
+            # Sécuriser les types
+            if isinstance(y_pred[0], str):
+                y_pred = np.array([int(p) for p in y_pred])
 
-        acc = round(accuracy_score(y_test, y_pred), 4)
-        f1 = round(f1_score(y_test, y_pred), 4)
+            acc = round(accuracy_score(y_test, y_pred), 4)
+            f1 = round(f1_score(y_test, y_pred), 4)
 
-        # Ajout au tableau
-        results['Modèle'].append(model_name)
-        results['Accuracy'].append(acc)
-        results['F1-score'].append(f1)
+            results['Modèle'].append(model_name)
+            results['Accuracy'].append(acc)
+            results['F1-score'].append(f1)
 
-        # Visualisation matrice + rapport
-        print(f"\n📊 Résultats pour : {model_name}")
-        print(classification_report(y_test, y_pred))
-        plt.figure(figsize = (6,6))
-        sns.heatmap(confusion_matrix(y_test, y_pred), annot = True, fmt = "d", cmap = "Blues")
-        plt.title(f"Matrice de confusion - {model_name}")
-        plt.xlabel("Prédictions")
-        plt.ylabel("Réel")
-        plt.show()
+            # Visualisation
+            print(f"\n📊 Résultats pour : {model_name}")
+            print(classification_report(y_test, y_pred))
+            plt.figure(figsize=(6, 6))
+            sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt="d", cmap="Blues")
+            plt.title(f"Matrice de confusion - {model_name}")
+            plt.xlabel("Prédictions")
+            plt.ylabel("Réel")
+            plt.show()
+
+        # ➕ Ajout des stats si disponibles
+        if training_stats and model_name in training_stats:
+            stats = training_stats[model_name]
+            results['Temps d\'entraînement (s)'].append(stats.get('time', 'NA'))
+            results['CPU (%)'].append(stats.get('cpu', 'NA'))
+            results['RAM (%)'].append(stats.get('ram', 'NA'))
+        else:
+            results['Temps d\'entraînement (s)'].append('NA')
+            results['CPU (%)'].append('NA')
+            results['RAM (%)'].append('NA')
 
     # Résultats finaux
     df_results = pd.DataFrame(results)
     print("\n📊 Comparaison finale des modèles :")
     display(df_results)
 
-    # Log complet tableau dans MLflow
-    df_results.to_csv("../models_saved/comparaison_resultats.csv", index = False)
+    # Enregistrement
+    df_results.to_csv("../models_saved/comparaison_resultats.csv", index=False)
     mlflow.log_artifact("../models_saved/comparaison_resultats.csv")
 
     return df_results

@@ -184,6 +184,7 @@ def train_fasttext_supervised(file_path = "../models_saved/tweets_fasttext.txt",
     mlflow.register_model(model_uri, "sentiment_model_fasttext")
 
     return model
+
 @mlflow_run_safety(experiment_name="P7_sentiment_analysis")
 def train_lstm_model(
     X_embeddings,
@@ -311,6 +312,10 @@ def train_lstm_model(
     for col in best.index:
         doc.add_paragraph(f"{col} : {best[col]}")
     doc.save(resume_doc_path)
+
+    # 💾 Sauvegarde de la meilleure config LSTM
+    joblib.dump(best.to_dict(), '../models_saved/best_lstm_config.pkl')
+    print("✅ Configuration LSTM optimale sauvegardée dans best_lstm_config.pkl")
 
     # 🕒 Temps total
     suivi_temps_ressources(start, "LSTM")
