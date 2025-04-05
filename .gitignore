@@ -45,7 +45,7 @@ __pycache__/
 *.h5
 *.txt
 !requirements.txt
-
+app.py
 # =========================
 # NOTEBOOKS
 # =========================
